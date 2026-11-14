@@ -260,9 +260,8 @@
   function currentLeafletGroundWidth() {
     const size = map.getSize();
     const center = map.getCenter();
-    const midpoint = [size.x / 2, size.y / 2];
-    const first = map.containerPointToLatLng(midpoint);
-    const last = map.containerPointToLatLng([size.x, midpoint[1]]);
+    const first = map.containerPointToLatLng([0, size.y / 2]);
+    const last = map.containerPointToLatLng([size.x, size.y / 2]);
     const longitudeSpan = Math.abs(last.lng - first.lng);
     return 3396190 * Math.max(0.000001, Math.cos(center.lat * Math.PI / 180)) *
       longitudeSpan * Math.PI / 180;
@@ -412,6 +411,7 @@
           unit: "metric"
         }), "bottom-left");
         geologicView.constraints.snapToZoom = false;
+        geologicView.constraints.maxScale = 0;
         return geologicView;
       });
     }).then(function () {
