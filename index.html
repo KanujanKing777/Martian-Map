@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en" data-type="software">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="page-type" content="software">
+    <meta name="site-kind" content="software">
+    <meta name="theme-color" content="#111312">
+    <title>Mars Atlas — surface explorer</title>
+    <link rel="preconnect" href="https://trek.nasa.gov">
+    <link rel="preconnect" href="https://js.arcgis.com">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <link rel="stylesheet" href="https://js.arcgis.com/4.32/esri/themes/dark/main.css">
+    <link rel="stylesheet" href="styles.css">
+    <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script defer src="https://unpkg.com/esri-leaflet@3.0.15/dist/esri-leaflet.js"></script>
+    <script defer src="app.js"></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#map">Skip to map</a>
+    <header class="topbar">
+      <a class="brand" href="#map" aria-label="Mars Atlas home">
+        <span class="brand-mark" aria-hidden="true"><span></span></span>
+        <span class="brand-name">MARS <span>ATLAS</span></span>
+      </a>
+      <div class="topbar-context">
+        <span class="status-dot" aria-hidden="true"></span>
+        <span>Surface explorer</span>
+        <span class="topbar-divider" aria-hidden="true"></span>
+        <span class="data-source" id="map-source">NASA TREK DATA</span>
+      </div>
+      <button class="icon-button topbar-reset" id="reset-view" type="button" title="Show the whole planet" aria-label="Show the whole planet">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 10a7.5 7.5 0 1 1 .8 5.3M4 4.8v5.7h5.7"/></svg>
+        <span>Full Mars</span>
+      </button>
+    </header>
+
+    <main class="workspace">
+      <aside class="sidebar" aria-label="Map controls">
+        <div class="sidebar-scroll">
+          <section class="search-section" aria-labelledby="search-title">
+            <div class="section-kicker">LOCATION</div>
+            <h1 id="search-title">Find a place</h1>
+            <form class="search-form" id="search-form">
+              <label class="sr-only" for="place-search">Search a location or coordinates</label>
+              <svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.2 4.2"/></svg>
+              <input id="place-search" type="search" autocomplete="off" placeholder="Place or lat, lon">
+              <button type="submit" aria-label="Go to location">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13m-5-5 5 5-5 5"/></svg>
+              </button>
+              <div class="search-results" id="search-results" role="listbox" hidden></div>
+            </form>
+            <p class="search-hint">Try “Jezero Crater” or <span>18.4, 77.5</span></p>
+          </section>
+
+          <section class="focus-card" aria-labelledby="focus-title">
+            <div class="focus-heading">
+              <span class="focus-pin" aria-hidden="true"><span></span></span>
+              <span class="section-kicker">CURRENT FOCUS</span>
+              <button class="text-icon-button" id="copy-coordinates" type="button" aria-label="Copy focus coordinates" title="Copy coordinates">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="11" height="12" rx="1.5"/><path d="M16 8V5.8A1.8 1.8 0 0 0 14.2 4H6a2 2 0 0 0-2 2v8.2A1.8 1.8 0 0 0 5.8 16H8"/></svg>
+              </button>
+            </div>
+            <h2 id="focus-title">Jezero region</h2>
+            <div class="focus-coordinates" id="focus-coordinates">18.4000° N <span>·</span> 77.5000° E</div>
+            <div class="focus-meta"><span class="meta-marker"></span><span>Western Isidis Planitia</span></div>
+          </section>
+
+          <section class="control-section" aria-labelledby="imagery-title">
+            <div class="section-heading">
+              <div>
+                <div class="section-kicker">MAP STYLE</div>
+                <h2 id="imagery-title">Imagery</h2>
+              </div>
+              <span class="section-index">01</span>
+            </div>
+            <div class="imagery-options" role="group" aria-label="Choose map imagery">
+              <button class="imagery-option is-selected" type="button" data-imagery="viking" aria-pressed="true">
+                <span class="imagery-swatch swatch-viking" aria-hidden="true"></span>
+                <span><strong>Optical</strong><small>Global mosaic · 232 m/px</small></span>
+                <span class="radio-indicator" aria-hidden="true"></span>
+              </button>
+              <button class="imagery-option" type="button" data-imagery="relief" aria-pressed="false">
+                <span class="imagery-swatch swatch-relief" aria-hidden="true"></span>
+                <span><strong>Topographic</strong><small>MOLA + HRSC terrain</small></span>
+                <span class="radio-indicator" aria-hidden="true"></span>
+              </button>
+              <button class="imagery-option" type="button" data-imagery="geologic" aria-pressed="false">
+                <span class="imagery-swatch swatch-geologic" aria-hidden="true"></span>
+                <span><strong>Geologic</strong><small>USGS global map · 1:20M</small></span>
+                <span class="radio-indicator" aria-hidden="true"></span>
+              </button>
+            </div>
+          </section>
+
+          <section class="control-section locations-section" aria-labelledby="locations-title">
+            <div class="section-heading">
+              <div>
+                <div class="section-kicker">QUICK ACCESS</div>
+                <h2 id="locations-title">Famous Spots</h2>
+              </div>
+              <span class="section-index">03</span>
+            </div>
+            <div class="location-list" id="location-list"></div>
+          </section>
+          <footer class="sidebar-footer">
+            <span class="nasa-mark" aria-hidden="true">N</span>
+            <span>Independent viewer · NASA Mars Trek + USGS</span>
+          </footer>
+        </div>
+      </aside>
+
+      <section class="map-stage" aria-label="Interactive Mars map">
+        <div id="map" role="application" aria-label="Pan and zoom across Mars"></div>
+        <div id="geologic-map" role="application" aria-label="USGS geologic map of Mars" hidden></div>
+        <div class="map-zoom-controls" role="group" aria-label="Map zoom">
+          <button id="zoom-in" type="button" aria-label="Zoom in">+</button>
+          <button id="zoom-out" type="button" aria-label="Zoom out">−</button>
+        </div>
+        <div class="map-loading" id="geologic-loading" role="status" hidden>Loading USGS geologic map…</div>
+        <div class="map-topline">
+          <div class="map-location-label">
+            <span class="location-live-dot" aria-hidden="true"></span>
+            <span id="map-place-title">Jezero Crater</span>
+            <span class="map-label-divider">/</span>
+            <span id="map-region-title">Isidis Planitia</span>
+          </div>
+          <div class="map-actions">
+            <button class="map-action" id="share-view" type="button" title="Copy a link to this map view">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.7 10.7 6.6-4.4m-6.6 7 6.6 4.4"/></svg>
+              <span>Share</span>
+            </button>
+            <button class="map-action" id="fullscreen-map" type="button" title="Toggle full screen">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4H4v4m12-4h4v4M4 16v4h4m12-4v4h-4"/></svg>
+              <span>Full screen</span>
+            </button>
+          </div>
+        </div>
+        <div class="map-scale" id="map-scale" aria-label="Map scale"></div>
+        <div class="map-bottomline">
+          <div class="cursor-readout">
+            <span class="readout-label">POINTER</span>
+            <span id="pointer-coordinates">—</span>
+          </div>
+          <div class="map-bottom-right">
+            <span class="coordinate-system" id="coordinate-system">MARS 2000 · EQUIRECTANGULAR</span>
+            <div class="map-north" aria-label="North is up"><span>N</span><svg viewBox="0 0 16 22" aria-hidden="true"><path d="M8 1 14 18 8 14 2 18z"/></svg></div>
+          </div>
+        </div>
+        <div class="map-error" id="map-error" role="alert" hidden>
+          <div class="error-mark">!</div>
+          <div><strong>Map data unavailable</strong><p id="map-error-message">The selected map service could not load. Check your connection and try again.</p></div>
+          <button id="retry-map" type="button">Retry</button>
+        </div>
+        <div class="toast" id="toast" role="status" aria-live="polite"></div>
+      </section>
+    </main>
+  </body>
+</html>
