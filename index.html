@@ -8,6 +8,7 @@
     <meta name="theme-color" content="#111312">
     <title>Mars Atlas — surface explorer</title>
     <link rel="preconnect" href="https://trek.nasa.gov">
+    <link rel="preconnect" href="https://global-data.mars.asu.edu">
     <link rel="preconnect" href="https://js.arcgis.com">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
     <link rel="stylesheet" href="https://js.arcgis.com/4.32/esri/themes/dark/main.css">
@@ -87,7 +88,12 @@
               </button>
               <button class="imagery-option" type="button" data-imagery="geologic" aria-pressed="false">
                 <span class="imagery-swatch swatch-geologic" aria-hidden="true"></span>
-                <span><strong>Geologic</strong><small>USGS global map · 1:20M</small></span>
+                <span><strong>Geophysical</strong><small>USGS global map · 1:20M</small></span>
+                <span class="radio-indicator" aria-hidden="true"></span>
+              </button>
+              <button class="imagery-option" type="button" data-imagery="thermal" aria-pressed="false">
+                <span class="imagery-swatch swatch-thermal" aria-hidden="true"></span>
+                <span><strong>Thermal</strong><small>THEMIS infrared · day + night</small></span>
                 <span class="radio-indicator" aria-hidden="true"></span>
               </button>
             </div>
@@ -105,7 +111,7 @@
           </section>
           <footer class="sidebar-footer">
             <span class="nasa-mark" aria-hidden="true">N</span>
-            <span>Independent viewer · NASA Mars Trek + USGS</span>
+            <span>Independent viewer · NASA Mars Trek + USGS + ASU THEMIS</span>
           </footer>
         </div>
       </aside>

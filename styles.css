@@ -179,6 +179,7 @@ button:focus-visible, input:focus-visible, a:focus-visible {
 .swatch-viking { background: linear-gradient(140deg, #303f37 0%, #9b6849 40%, #c49770 57%, #424b40 58%, #805b46 100%); }
 .swatch-relief { background: linear-gradient(150deg, #646855, #b88a69 35%, #353d37 36%, #a28c70 63%, #555b4d 64%); }
 .swatch-geologic { background: linear-gradient(135deg, #d6ad76 0 24%, #6f9c9b 24% 43%, #c87858 43% 60%, #e0cc8a 60% 78%, #8c7894 78%); }
+.swatch-thermal { background: linear-gradient(135deg, #151c26 0 25%, #354b62 25% 48%, #7b8c91 48% 61%, #c3ad7c 61% 75%, #242c38 75%); }
 .imagery-option strong, .imagery-option small { display: block; }
 .imagery-option strong { font-size: 11px; font-weight: 500; }
 .imagery-option small { margin-top: 4px; color: var(--muted); font-size: 10px; }

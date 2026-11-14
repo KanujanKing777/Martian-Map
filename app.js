@@ -5,6 +5,8 @@
   const INITIAL_VIEW_WIDTH_METERS = 1000000;
   const MARS_BOUNDS = [[-90, -180], [90, 180]];
   const SERVICES = "https://trek.nasa.gov/mars/trekarcgis/rest/services/";
+  const THEMIS_COMPOSITE = "https://global-data.mars.asu.edu/bin/compositeRasterTHEMIS.pl";
+  const THEMIS_RESOLUTIONS = [1.666667, 4, 8, 16, 32, 64];
   const USGS_WEBMAP_ID = "87e77dc5c7d94cc792c663394f31de78";
   const ROBINSON_EXTENT = {
     xmin: -9055144.3083,
@@ -170,6 +172,7 @@
   const toastElement = byId("toast");
   let map;
   let baseLayer;
+  let thermalLayer;
   let geologicView;
   let arcGISScriptPromise;
   let arcGISModulesPromise;
@@ -431,6 +434,59 @@
     mapError.hidden = false;
   }
 
+  function thermalRasterUrl() {
+    const center = map.getCenter();
+    const size = map.getSize();
+    const longitude = ((center.lng % 360) + 360) % 360;
+    const targetScale = 256 * Math.pow(2, map.getZoom()) / 180;
+    const supportedScale = THEMIS_RESOLUTIONS.reduce(function (selected, resolution) {
+      return resolution <= targetScale ? resolution : selected;
+    }, THEMIS_RESOLUTIONS[0]);
+    const dimensionScale = supportedScale / targetScale;
+    const query = new URLSearchParams({
+      scale: String(supportedScale),
+      lat: String(center.lat),
+      lon: String(longitude),
+      bg: "2",
+      dn: "2",
+      fg: "1",
+      rel: "2",
+      wh: String(Math.max(1, Math.round(size.y * dimensionScale))),
+      ww: String(Math.max(1, Math.round(size.x * dimensionScale))),
+      bdr: "0",
+      public: "1",
+      col: "3b7aa6"
+    });
+    return THEMIS_COMPOSITE + "?" + query.toString();
+  }
+
+  function refreshThermalLayer() {
+    if (!map || activeImagery !== "thermal") return;
+    const url = thermalRasterUrl();
+    const bounds = map.getBounds();
+    if (!thermalLayer) {
+      thermalLayer = L.imageOverlay(url, bounds, {
+        opacity: 1,
+        interactive: false,
+        attribution: "THEMIS infrared: Arizona State University / NASA"
+      });
+      thermalLayer.on("load", function () {
+        if (activeImagery === "thermal") mapError.hidden = true;
+      });
+      thermalLayer.on("error", function () {
+        if (activeImagery === "thermal") {
+          showMapError("THEMIS could not load thermal imagery. Check your connection and try again.");
+        }
+      });
+      thermalLayer.addTo(map);
+    } else {
+      thermalLayer.setBounds(bounds);
+      thermalLayer.setUrl(url);
+      if (!map.hasLayer(thermalLayer)) thermalLayer.addTo(map);
+    }
+    baseLayer = thermalLayer;
+  }
+
   function openGeologicMap() {
     const savedState = activeImagery === "geologic"
       ? (geologicView && geologicView.ready ? null : savedLeafletState)
@@ -600,15 +656,24 @@
         pendingFullMars = false;
         map.fitBounds(MARS_BOUNDS, { padding: [28, 28] });
       } else if (savedState) {
-        const zoom = zoomForGroundWidth(
-          savedState.lat,
-          savedState.widthMeters,
-          map.getSize().x
-        );
+        const zoom = key === "thermal"
+          ? savedState.zoom
+          : zoomForGroundWidth(savedState.lat, savedState.widthMeters, map.getSize().x);
         map.setView([savedState.lat, savedState.lon], zoom, { animate: false });
       }
     }
     activeImagery = key;
+    if (key === "thermal") {
+      byId("map-source").textContent = "ASU THEMIS · DAY + NIGHT IR";
+      byId("coordinate-system").textContent = "MARS 2000 · EQUIRECTANGULAR";
+      mapError.hidden = true;
+      if (baseLayer) {
+        map.removeLayer(baseLayer);
+        baseLayer = null;
+      }
+      refreshThermalLayer();
+      return;
+    }
     byId("map-source").textContent = "NASA TREK DATA";
     byId("coordinate-system").textContent = "MARS 2000 · EQUIRECTANGULAR";
     const next = L.esri.imageMapLayer({
@@ -709,6 +774,7 @@
         showMapError("NASA Trek could not load the imagery. Check your connection and try again.");
       }
     });
+    map.on("moveend resize", refreshThermalLayer);
 
     document.querySelectorAll(".imagery-option").forEach(function (button) {
       button.addEventListener("click", function () {
