@@ -168,7 +168,10 @@
   let activeImagery = "viking";
   let toastTimer;
   let focusMarker;
+  let plannedRouteLayer;
   let activeCoordinates = { lat: ORIGIN.lat, lon: ORIGIN.lon };
+  let routeSelection = { from: null, to: null };
+  let routeHighlight = { from: -1, to: -1 };
 
   function formatCoordinate(value, axis) {
     const direction = axis === "lat"
@@ -347,6 +350,315 @@
     });
     baseLayer = next.addTo(map);
   }
+
+  function getRouteSuggestions(query) {
+    const value = query.trim().toLowerCase();
+    const suggestions = [];
+    const center = getCurrentMapState();
+    const centerOption = {
+      key: "map-center",
+      name: "Current map center",
+      category: "Current view",
+      region: "Map center",
+      lat: center.lat,
+      lon: center.lon,
+      label: "Current map center"
+    };
+    const matchesCenter = !value || ["current map center", "map center", "center"].some(function (label) {
+      return label.indexOf(value) === 0;
+    });
+    if (matchesCenter) suggestions.push(centerOption);
+
+    const coordinates = query.match(/^\s*(-?\d+(?:\.\d+)?)\s*[, ]\s*(-?\d+(?:\.\d+)?)\s*$/);
+    if (coordinates) {
+      const lat = Number(coordinates[1]);
+      const lon = Number(coordinates[2]);
+      if (lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180) {
+        suggestions.push({
+          key: "coordinates-" + lat + "-" + lon,
+          name: "Custom coordinates",
+          category: "Coordinates",
+          region: "Entered coordinates",
+          lat: lat,
+          lon: lon,
+          label: coordinates[0].trim()
+        });
+      }
+    }
+
+    SEARCHABLE_PLACES.forEach(function (place) {
+      const haystack = (place.name + " " + place.region + " " + place.category).toLowerCase();
+      if (!value || haystack.includes(value)) suggestions.push(place);
+    });
+    return suggestions.slice(0, 10);
+  }
+
+  function hideRouteSuggestions(side) {
+    byId("route-" + side + "-options").hidden = true;
+    byId("route-" + side).setAttribute("aria-expanded", "false");
+    byId("route-" + side).removeAttribute("aria-activedescendant");
+  }
+
+  function renderRouteSuggestions(side) {
+    const input = byId("route-" + side);
+    const list = byId("route-" + side + "-options");
+    const suggestions = getRouteSuggestions(input.value);
+    list.replaceChildren();
+    routeHighlight[side] = -1;
+
+    if (!suggestions.length) {
+      const empty = document.createElement("div");
+      empty.className = "route-empty";
+      empty.textContent = "No matching places. Try latitude, longitude.";
+      list.appendChild(empty);
+    } else {
+      suggestions.forEach(function (place, index) {
+        const option = document.createElement("button");
+        option.className = "route-suggestion";
+        option.type = "button";
+        option.id = "route-" + side + "-option-" + index;
+        option.setAttribute("role", "option");
+        option.setAttribute("aria-selected", "false");
+        option.addEventListener("mousedown", function (event) { event.preventDefault(); });
+        option.addEventListener("click", function () { selectRoutePlace(side, place); });
+
+        const marker = document.createElement("span");
+        marker.className = "route-suggestion-mark";
+        marker.textContent = place.key === "map-center" ? "◎" :
+          (place.key.indexOf("coordinates-") === 0 ? "°" : "•");
+        marker.setAttribute("aria-hidden", "true");
+        const copy = document.createElement("span");
+        copy.className = "route-suggestion-copy";
+        const name = document.createElement("strong");
+        name.textContent = place.label || place.name;
+        const details = document.createElement("small");
+        details.textContent = place.region + " · " +
+          formatCoordinate(place.lat, "lat") + "  " + formatCoordinate(place.lon, "lon");
+        copy.append(name, details);
+        option.append(marker, copy);
+        list.appendChild(option);
+      });
+    }
+
+    list.hidden = false;
+    input.setAttribute("aria-expanded", "true");
+  }
+
+  function updateRouteFieldMeta(side) {
+    const selected = routeSelection[side];
+    byId("route-" + side + "-meta").textContent = selected
+      ? formatCoordinate(selected.lat, "lat") + "   " + formatCoordinate(selected.lon, "lon")
+      : "Place or latitude, longitude";
+  }
+
+  function selectRoutePlace(side, place) {
+    routeSelection[side] = place;
+    byId("route-" + side).value = place.label || place.name;
+    updateRouteFieldMeta(side);
+    hideRouteSuggestions(side);
+    updateRouteButtons();
+    byId("route-status").textContent = routeSelection.from && routeSelection.to
+      ? "Both locations selected."
+      : "Choose the other location to continue.";
+  }
+
+  function updateRouteButtons() {
+    const ready = Boolean(routeSelection.from && routeSelection.to);
+    byId("route-go").disabled = !ready;
+  }
+
+  function setRouteOptionHighlight(side, index) {
+    const input = byId("route-" + side);
+    const options = Array.from(byId("route-" + side + "-options").querySelectorAll("[role='option']"));
+    if (!options.length) return;
+    routeHighlight[side] = Math.max(0, Math.min(options.length - 1, index));
+    options.forEach(function (option, optionIndex) {
+      const active = optionIndex === routeHighlight[side];
+      option.classList.toggle("is-active", active);
+      option.setAttribute("aria-selected", String(active));
+    });
+    input.setAttribute("aria-activedescendant", options[routeHighlight[side]].id);
+  }
+
+  function clearPlannedRoute() {
+    if (plannedRouteLayer && map.hasLayer(plannedRouteLayer)) map.removeLayer(plannedRouteLayer);
+    plannedRouteLayer = null;
+  }
+
+  function drawPlannedRoute(coordinates) {
+    clearPlannedRoute();
+    if (!map.getPane("plannedRoutePane")) {
+      map.createPane("plannedRoutePane");
+      map.getPane("plannedRoutePane").style.zIndex = 625;
+      map.getPane("plannedRoutePane").style.pointerEvents = "none";
+    }
+    plannedRouteLayer = L.polyline(coordinates, {
+      pane: "plannedRoutePane",
+      color: "#f28b59",
+      weight: 4,
+      opacity: 0.96,
+      lineCap: "round",
+      lineJoin: "round"
+    }).addTo(map);
+    if (coordinates.length > 1) {
+      map.fitBounds(plannedRouteLayer.getBounds(), { padding: [48, 48], maxZoom: 7 });
+    }
+  }
+
+  async function calculateRoute() {
+    if (!routeSelection.from || !routeSelection.to) return;
+    hideRouteSuggestions("from");
+    hideRouteSuggestions("to");
+    byId("route-form").hidden = true;
+    byId("route-preview").hidden = false;
+    byId("route-preview-tag").textContent = "MARS ROUTE PLANNER";
+    byId("route-preview-title").textContent = "Calculating route…";
+    byId("route-preview-note").textContent = "Loading elevation and thermal-inertia data, then searching for the lowest-cost path.";
+    byId("route-preview-metrics").hidden = true;
+    byId("route-preview-from").textContent = routeSelection.from.name;
+    byId("route-preview-to").textContent = routeSelection.to.name;
+    byId("route-preview-from-coords").textContent =
+      formatCoordinate(routeSelection.from.lat, "lat") + "   " + formatCoordinate(routeSelection.from.lon, "lon");
+    byId("route-preview-to-coords").textContent =
+      formatCoordinate(routeSelection.to.lat, "lat") + "   " + formatCoordinate(routeSelection.to.lon, "lon");
+    byId("route-status").textContent = "Fetching public Mars terrain data and calculating the route…";
+    byId("route-go").disabled = true;
+    byId("route-go").textContent = "Planning…";
+    clearPlannedRoute();
+
+    try {
+      const response = await fetch("/api/route", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          from: { lat: routeSelection.from.lat, lon: routeSelection.from.lon },
+          to: { lat: routeSelection.to.lat, lon: routeSelection.to.lon }
+        })
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "The route could not be calculated.");
+
+      drawPlannedRoute(result.path);
+      byId("route-preview-title").textContent = "Least-cost route found";
+      byId("route-preview-note").textContent =
+        "This is a planning estimate, not a safety guarantee. The available layers do not include several important hazards.";
+      const used = ["MOLA elevation: slope and local roughness"];
+      if (result.data && result.data.tesThermalInertia) used.push("TES thermal inertia");
+      const omitted = (result.omitted || []).join(", ");
+      byId("route-preview-metrics").textContent =
+        "Distance " + Number(result.distanceKm).toLocaleString(undefined, { maximumFractionDigits: 2 }) +
+        " km · grid " + Number(result.gridCellKm).toLocaleString(undefined, { maximumFractionDigits: 2 }) +
+        " km. Used: " + used.join("; ") + ". Not scored: " + omitted + ".";
+      byId("route-preview-metrics").hidden = false;
+      byId("route-status").textContent = "Route line shown on the map.";
+    } catch (error) {
+      byId("route-preview").hidden = true;
+      byId("route-form").hidden = false;
+      byId("route-status").textContent = error.message || "Route calculation failed. Check that the Python backend is running.";
+    } finally {
+      updateRouteButtons();
+      byId("route-go").textContent = "Go";
+    }
+  }
+
+  function openRoutePlanner() {
+    clearPlannedRoute();
+    routeSelection = { from: null, to: null };
+    routeHighlight = { from: -1, to: -1 };
+    ["from", "to"].forEach(function (side) {
+      byId("route-" + side).value = "";
+      updateRouteFieldMeta(side);
+      hideRouteSuggestions(side);
+    });
+    byId("route-form").hidden = false;
+    byId("route-preview").hidden = true;
+    byId("route-status").textContent = "";
+    updateRouteButtons();
+    byId("route-planner").hidden = false;
+    byId("map-controls").classList.add("is-routing");
+    byId("sidebar-content").hidden = true;
+    if (window.matchMedia("(max-width: 680px)").matches) {
+      byId("map-controls").classList.add("is-open");
+    }
+    byId("open-route-planner").setAttribute("aria-expanded", "true");
+    window.setTimeout(function () { byId("route-from").focus(); }, 0);
+  }
+
+  function closeRoutePlanner() {
+    ["from", "to"].forEach(hideRouteSuggestions);
+    byId("route-planner").hidden = true;
+    byId("sidebar-content").hidden = false;
+    byId("map-controls").classList.remove("is-routing", "is-open");
+    byId("open-route-planner").setAttribute("aria-expanded", "false");
+    byId("open-route-planner").focus();
+  }
+
+  function initializeRoutePlanner() {
+    ["from", "to"].forEach(function (side) {
+      const input = byId("route-" + side);
+      input.addEventListener("focus", function () { renderRouteSuggestions(side); });
+      input.addEventListener("input", function () {
+        routeSelection[side] = null;
+        updateRouteFieldMeta(side);
+        updateRouteButtons();
+        byId("route-status").textContent = "";
+        renderRouteSuggestions(side);
+      });
+      input.addEventListener("keydown", function (event) {
+        const list = byId("route-" + side + "-options");
+        const optionCount = list.querySelectorAll("[role='option']").length;
+        if (event.key === "ArrowDown" && !list.hidden && optionCount) {
+          event.preventDefault();
+          setRouteOptionHighlight(side, routeHighlight[side] + 1);
+        } else if (event.key === "ArrowUp" && !list.hidden && optionCount) {
+          event.preventDefault();
+          setRouteOptionHighlight(side, routeHighlight[side] < 0 ? optionCount - 1 : routeHighlight[side] - 1);
+        } else if (event.key === "Enter" && !list.hidden && optionCount) {
+          event.preventDefault();
+          const index = routeHighlight[side] < 0 ? 0 : routeHighlight[side];
+          list.querySelectorAll("[role='option']")[index].click();
+        } else if (event.key === "Escape") {
+          event.preventDefault();
+          if (!list.hidden) hideRouteSuggestions(side);
+          else closeRoutePlanner();
+        }
+      });
+    });
+
+    byId("open-route-planner").addEventListener("click", openRoutePlanner);
+    byId("close-route-planner").addEventListener("click", closeRoutePlanner);
+    byId("route-form").addEventListener("submit", function (event) {
+      event.preventDefault();
+      calculateRoute();
+    });
+    byId("edit-route").addEventListener("click", function () {
+      clearPlannedRoute();
+      byId("route-preview").hidden = true;
+      byId("route-form").hidden = false;
+      byId("route-status").textContent = "";
+      byId("route-from").focus();
+    });
+    byId("swap-route-points").addEventListener("click", function () {
+      const previousFrom = routeSelection.from;
+      routeSelection.from = routeSelection.to;
+      routeSelection.to = previousFrom;
+      ["from", "to"].forEach(function (side) {
+        byId("route-" + side).value = routeSelection[side]
+          ? (routeSelection[side].label || routeSelection[side].name)
+          : "";
+        updateRouteFieldMeta(side);
+      });
+      byId("route-status").textContent = "Starting point and destination swapped.";
+      updateRouteButtons();
+    });
+    byId("route-planner").addEventListener("click", function (event) {
+      if (!event.target.closest(".route-input-wrap")) {
+        hideRouteSuggestions("from");
+        hideRouteSuggestions("to");
+      }
+    });
+  }
+
   function createMap() {
     if (!window.L || !L.esri) {
       mapError.hidden = false;
@@ -467,6 +779,7 @@
     });
 
     addMobileControl();
+    initializeRoutePlanner();
     window.setTimeout(function () { map.invalidateSize(); }, 0);
   }
 

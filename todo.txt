@@ -1,0 +1,8 @@
+Images putting 
+-> if possible, build like google maps by stitching the Images
+-> atleast put it like, business images
+
+Scientific goals
+-> going from one place to another as in google maps goto
+-> use algorithm used by google maps
+   add weights by calculating risks using all the map styles

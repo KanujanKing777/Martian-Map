@@ -36,10 +36,16 @@
 
     <main class="workspace">
       <aside class="sidebar" aria-label="Map controls">
-        <div class="sidebar-scroll">
+        <div class="sidebar-scroll" id="sidebar-content">
           <section class="search-section" aria-labelledby="search-title">
             <div class="section-kicker">LOCATION</div>
-            <h1 id="search-title">Find a place</h1>
+            <div class="search-title-row">
+              <h1 id="search-title">Find a place</h1>
+              <button class="icon-button route-launch" id="open-route-planner" type="button" title="Plan a route" aria-label="Plan a route" aria-controls="route-planner" aria-expanded="false">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="6" r="2.5"/><path d="M8.5 18H11a5 5 0 0 0 5-5V11a5 5 0 0 1 2-4"/></svg>
+                <span>Go to</span>
+              </button>
+            </div>
             <form class="search-form" id="search-form">
               <label class="sr-only" for="place-search">Search a location or coordinates</label>
               <svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.2 4.2"/></svg>
@@ -69,7 +75,7 @@
             <div class="section-heading">
               <div>
                 <div class="section-kicker">MAP STYLE</div>
-                <h2 id="imagery-title">Imagery</h2>
+                <h2 id="imagery-title">Layers</h2>
               </div>
               <span class="section-index">01</span>
             </div>
@@ -112,6 +118,65 @@
             <span>Independent viewer · NASA Mars Trek + USGS + ASU THEMIS</span>
           </footer>
         </div>
+        <section class="route-planner" id="route-planner" role="dialog" aria-labelledby="route-title" hidden>
+          <div class="route-planner-header">
+            <div>
+              <div class="section-kicker">DIRECTIONS</div>
+              <h2 id="route-title">Go to</h2>
+            </div>
+            <button class="route-close" id="close-route-planner" type="button" aria-label="Close route planner" title="Close">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
+            </button>
+          </div>
+          <p class="route-intro">Choose a starting point and a destination on Mars.</p>
+
+          <form id="route-form" autocomplete="off">
+            <div class="route-pickers">
+              <div class="route-pick-row">
+                <span class="route-point route-point-from" aria-hidden="true">A</span>
+                <div class="route-input-wrap">
+                  <label for="route-from">From</label>
+                  <input id="route-from" type="text" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="route-from-options" placeholder="Choose a starting point">
+                  <div class="route-field-meta" id="route-from-meta">Place or latitude, longitude</div>
+                  <div class="route-suggestions" id="route-from-options" role="listbox" aria-label="Starting point suggestions" hidden></div>
+                </div>
+              </div>
+              <button class="route-swap" id="swap-route-points" type="button" aria-label="Swap starting point and destination" title="Swap locations">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7h12l-3-3m3 3-3 3M17 17H5l3 3m-3-3 3-3"/></svg>
+              </button>
+              <div class="route-pick-row">
+                <span class="route-point route-point-to" aria-hidden="true">B</span>
+                <div class="route-input-wrap">
+                  <label for="route-to">To</label>
+                  <input id="route-to" type="text" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="route-to-options" placeholder="Choose a destination">
+                  <div class="route-field-meta" id="route-to-meta">Place or latitude, longitude</div>
+                  <div class="route-suggestions" id="route-to-options" role="listbox" aria-label="Destination suggestions" hidden></div>
+                </div>
+              </div>
+            </div>
+            <div class="route-actions">
+              <button class="route-button route-button-primary" id="route-go" type="submit" disabled>Go</button>
+            </div>
+          </form>
+
+          <section class="route-preview" id="route-preview" aria-live="polite" hidden>
+            <div class="route-preview-tag" id="route-preview-tag">ROUTE PLANNER</div>
+            <h3 id="route-preview-title">Your locations are ready</h3>
+            <p class="route-preview-note" id="route-preview-note">Routes are calculated from available numeric terrain data. Hazards without a suitable data layer are excluded.</p>
+            <p class="route-preview-metrics" id="route-preview-metrics" hidden></p>
+            <div class="route-preview-stop">
+              <span class="route-point route-point-from" aria-hidden="true">A</span>
+              <div><small>FROM</small><strong id="route-preview-from"></strong><span id="route-preview-from-coords"></span></div>
+            </div>
+            <div class="route-preview-connector" aria-hidden="true"></div>
+            <div class="route-preview-stop">
+              <span class="route-point route-point-to" aria-hidden="true">B</span>
+              <div><small>TO</small><strong id="route-preview-to"></strong><span id="route-preview-to-coords"></span></div>
+            </div>
+            <button class="route-button route-button-secondary route-edit" id="edit-route" type="button">Change locations</button>
+          </section>
+          <p class="route-status" id="route-status" role="status" aria-live="polite"></p>
+        </section>
       </aside>
 
       <section class="map-stage" aria-label="Interactive Mars map">
