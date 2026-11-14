@@ -9,9 +9,7 @@
     <title>Mars Atlas — surface explorer</title>
     <link rel="preconnect" href="https://trek.nasa.gov">
     <link rel="preconnect" href="https://global-data.mars.asu.edu">
-    <link rel="preconnect" href="https://js.arcgis.com">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-    <link rel="stylesheet" href="https://js.arcgis.com/4.32/esri/themes/dark/main.css">
     <link rel="stylesheet" href="styles.css">
     <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script defer src="https://unpkg.com/esri-leaflet@3.0.15/dist/esri-leaflet.js"></script>
@@ -118,12 +116,10 @@
 
       <section class="map-stage" aria-label="Interactive Mars map">
         <div id="map" role="application" aria-label="Pan and zoom across Mars"></div>
-        <div id="geologic-map" role="application" aria-label="USGS geologic map of Mars" hidden></div>
         <div class="map-zoom-controls" role="group" aria-label="Map zoom">
           <button id="zoom-in" type="button" aria-label="Zoom in">+</button>
           <button id="zoom-out" type="button" aria-label="Zoom out">−</button>
         </div>
-        <div class="map-loading" id="geologic-loading" role="status" hidden>Loading USGS geologic map…</div>
         <div class="map-topline">
           <div class="map-location-label">
             <span class="location-live-dot" aria-hidden="true"></span>

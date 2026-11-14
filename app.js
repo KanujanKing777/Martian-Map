@@ -5,17 +5,9 @@
   const INITIAL_VIEW_WIDTH_METERS = 1000000;
   const MARS_BOUNDS = [[-90, -180], [90, 180]];
   const SERVICES = "https://trek.nasa.gov/mars/trekarcgis/rest/services/";
+  const GEOLOGIC_SERVICE = SERVICES + "SIM3292_Global_Geology/MapServer";
   const THEMIS_COMPOSITE = "https://global-data.mars.asu.edu/bin/compositeRasterTHEMIS.pl";
   const THEMIS_RESOLUTIONS = [1.666667, 4, 8, 16, 32, 64];
-  const USGS_WEBMAP_ID = "87e77dc5c7d94cc792c663394f31de78";
-  const ROBINSON_EXTENT = {
-    xmin: -9055144.3083,
-    ymin: -4592776.3617,
-    xmax: 9055144.3095,
-    ymax: 4592776.3617
-  };
-  const ROBINSON_X = [1, 0.9986, 0.9954, 0.99, 0.9822, 0.973, 0.96, 0.9427, 0.9216, 0.8962, 0.8679, 0.835, 0.7986, 0.7597, 0.7186, 0.6732, 0.6213, 0.5722, 0.5322];
-  const ROBINSON_Y = [0, 0.062, 0.124, 0.186, 0.248, 0.31, 0.372, 0.434, 0.4958, 0.5571, 0.6176, 0.6769, 0.7346, 0.7903, 0.8435, 0.8936, 0.9394, 0.9761, 1];
   const LOCATIONS = {
   // Major craters
   jezero: {
@@ -163,26 +155,16 @@
   });
   const IMAGERY = {
     viking: SERVICES + "Mars_Viking_MDIM21_ClrMosaic_global_232m/ImageServer",
-    relief: SERVICES + "Mars_MOLA_blend200ppx_HRSC_ClrShade_clon0dd_200mpp/ImageServer"
+    relief: SERVICES + "Mars_MOLA_blend200ppx_HRSC_ClrShade_clon0dd_200mpp/ImageServer",
+    geologic: GEOLOGIC_SERVICE
   };
   const byId = function (id) { return document.getElementById(id); };
   const mapError = byId("map-error");
   const mapElement = byId("map");
-  const geologicMapElement = byId("geologic-map");
   const toastElement = byId("toast");
   let map;
   let baseLayer;
   let thermalLayer;
-  let geologicView;
-  let arcGISScriptPromise;
-  let arcGISModulesPromise;
-  let geologicLoadPromise;
-  let savedLeafletState;
-  let pendingFullMars;
-  let ArcGISGraphic;
-  let ArcGISPoint;
-  let ArcGISScaleBar;
-  let geologicFocusGraphic;
   let activeImagery = "viking";
   let toastTimer;
   let focusMarker;
@@ -206,226 +188,13 @@
     return Math.max(-1, Math.min(11, Math.log2(worldScale)));
   }
 
-  function interpolateRobinson(table, latitude) {
-    const position = Math.min(18, Math.abs(latitude) / 5);
-    const index = Math.min(17, Math.floor(position));
-    const fraction = position - index;
-    return table[index] + (table[index + 1] - table[index]) * fraction;
-  }
-
-  function projectRobinson(latitude, longitude) {
-    const radius = 3396190;
-    const absoluteLatitude = Math.min(90, Math.abs(latitude));
-    return {
-      x: 0.8487 * radius * longitude * Math.PI / 180 *
-        interpolateRobinson(ROBINSON_X, absoluteLatitude),
-      y: (latitude < 0 ? -1 : 1) * 1.3523 * radius *
-        interpolateRobinson(ROBINSON_Y, absoluteLatitude)
-    };
-  }
-
-  function unprojectRobinson(x, y) {
-    const radius = 3396190;
-    const normalizedY = Math.min(1, Math.abs(y) / (1.3523 * radius));
-    let index = 0;
-    while (index < ROBINSON_Y.length - 2 && ROBINSON_Y[index + 1] < normalizedY) {
-      index += 1;
-    }
-    const range = ROBINSON_Y[index + 1] - ROBINSON_Y[index];
-    const fraction = range === 0 ? 0 : (normalizedY - ROBINSON_Y[index]) / range;
-    const absoluteLatitude = (index + fraction) * 5;
-    const longitude = x / (
-      0.8487 * radius * interpolateRobinson(ROBINSON_X, absoluteLatitude)
-    ) * 180 / Math.PI;
-    return {
-      lat: (y < 0 ? -1 : 1) * absoluteLatitude,
-      lon: Math.max(-180, Math.min(180, longitude))
-    };
-  }
-
-  function groundWidthForZoom(latitude, zoom, viewportWidth) {
-    const metersPerDegree = 3396190 * Math.max(0.000001, Math.cos(latitude * Math.PI / 180)) *
-      Math.PI / 180;
-    return viewportWidth * 180 * metersPerDegree / (256 * Math.pow(2, zoom));
-  }
-
-  function mapViewportWidth() {
-    const leafletWidth = map ? map.getSize().x : 0;
-    const geologicWidth = geologicMapElement.clientWidth;
-    return Math.max(1, activeImagery === "geologic"
-      ? geologicWidth || leafletWidth || mapElement.clientWidth
-      : leafletWidth || mapElement.clientWidth);
-  }
-
-  function currentLeafletGroundWidth() {
-    const size = map.getSize();
-    const center = map.getCenter();
-    const first = map.containerPointToLatLng([0, size.y / 2]);
-    const last = map.containerPointToLatLng([size.x, size.y / 2]);
-    const longitudeSpan = Math.abs(last.lng - first.lng);
-    return 3396190 * Math.max(0.000001, Math.cos(center.lat * Math.PI / 180)) *
-      longitudeSpan * Math.PI / 180;
-  }
-
-  function geologicGroundWidth(view) {
-    const center = unprojectRobinson(view.center.x, view.center.y);
-    return Math.abs(view.extent.xmax - view.extent.xmin) *
-      Math.max(0.000001, Math.cos(center.lat * Math.PI / 180)) /
-      (0.8487 * interpolateRobinson(ROBINSON_X, center.lat));
-  }
-
-  function fitGeologicGroundWidth(view, widthMeters) {
-    const currentWidth = geologicGroundWidth(view);
-    if (!Number.isFinite(widthMeters) || widthMeters <= 0 ||
-        !Number.isFinite(currentWidth) || currentWidth <= 0 ||
-        !Number.isFinite(view.scale)) {
-      return Promise.reject(new Error("Cannot calculate the requested Mars map width."));
-    }
-    return view.goTo({
-      scale: view.scale * widthMeters / currentWidth
-    }, { animate: false });
-  }
-
   function getCurrentMapState() {
-    if (activeImagery === "geologic" && geologicView && geologicView.center &&
-        geologicView.extent && Number.isFinite(geologicView.scale)) {
-      const center = unprojectRobinson(geologicView.center.x, geologicView.center.y);
-      const widthMeters = geologicGroundWidth(geologicView);
-      return {
-        lat: center.lat,
-        lon: center.lon,
-        zoom: zoomForGroundWidth(center.lat, widthMeters, mapViewportWidth()),
-        widthMeters: widthMeters
-      };
-    }
-    if (activeImagery === "geologic" && savedLeafletState) {
-      return savedLeafletState;
-    }
     const center = map.getCenter();
     return {
       lat: center.lat,
       lon: center.lng,
-      zoom: map.getZoom(),
-      widthMeters: currentLeafletGroundWidth()
+      zoom: map.getZoom()
     };
-  }
-
-  function loadArcGISModules() {
-    if (arcGISModulesPromise) return arcGISModulesPromise;
-    if (!window.require && !arcGISScriptPromise) {
-      arcGISScriptPromise = new Promise(function (resolve, reject) {
-        const script = document.createElement("script");
-        script.src = "https://js.arcgis.com/4.32/";
-        script.async = true;
-        script.onload = resolve;
-        script.onerror = function () {
-          script.remove();
-          arcGISScriptPromise = null;
-          reject(new Error("The ArcGIS Maps SDK did not load."));
-        };
-        document.head.appendChild(script);
-      });
-    }
-    const sdkLoaded = window.require ? Promise.resolve() : arcGISScriptPromise;
-    arcGISModulesPromise = sdkLoaded.then(function () {
-      return new Promise(function (resolve, reject) {
-        if (!window.require) {
-          reject(new Error("The ArcGIS Maps SDK did not initialize."));
-          return;
-        }
-        window.require(
-          [
-            "esri/WebMap",
-            "esri/views/MapView",
-            "esri/Graphic",
-            "esri/geometry/Point",
-            "esri/widgets/ScaleBar"
-          ],
-          function (WebMap, MapView, Graphic, Point, ScaleBar) {
-            ArcGISGraphic = Graphic;
-            ArcGISPoint = Point;
-            ArcGISScaleBar = ScaleBar;
-            resolve({ WebMap: WebMap, MapView: MapView });
-          },
-          reject
-        );
-      });
-    }).catch(function (error) {
-      arcGISModulesPromise = null;
-      throw error;
-    });
-    return arcGISModulesPromise;
-  }
-
-  function updateGeologicFocus() {
-    if (!geologicView || !geologicView.ready || !geologicView.spatialReference || !ArcGISGraphic) return;
-    const projected = projectRobinson(activeCoordinates.lat, activeCoordinates.lon);
-    if (geologicFocusGraphic) geologicView.graphics.remove(geologicFocusGraphic);
-    geologicFocusGraphic = new ArcGISGraphic({
-      geometry: new ArcGISPoint({
-        x: projected.x,
-        y: projected.y,
-        spatialReference: geologicView.spatialReference
-      }),
-      symbol: {
-        type: "simple-marker",
-        style: "circle",
-        color: [229, 108, 67, 1],
-        size: 10,
-        outline: { color: [255, 230, 216, 1], width: 1.5 }
-      }
-    });
-    geologicView.graphics.add(geologicFocusGraphic);
-  }
-
-  function watchGeologicPointer(view) {
-    view.on("pointer-move", function (event) {
-      const point = view.toMap({ x: event.x, y: event.y });
-      if (!point) return;
-      const coordinates = unprojectRobinson(point.x, point.y);
-      byId("pointer-coordinates").textContent =
-        formatCoordinate(coordinates.lat, "lat") + "   " +
-        formatCoordinate(coordinates.lon, "lon");
-    });
-    view.on("pointer-leave", function () {
-      byId("pointer-coordinates").textContent = "—";
-    });
-  }
-
-  function ensureGeologicView() {
-    if (geologicLoadPromise) return geologicLoadPromise;
-    if (geologicView) return Promise.resolve(geologicView);
-    geologicLoadPromise = loadArcGISModules().then(function (modules) {
-      const webMap = new modules.WebMap({
-        portalItem: { id: USGS_WEBMAP_ID }
-      });
-      geologicView = new modules.MapView({
-        container: geologicMapElement,
-        map: webMap
-      });
-      watchGeologicPointer(geologicView);
-      return geologicView.when().then(function () {
-        geologicView.ui.components = [];
-        geologicView.ui.add(new ArcGISScaleBar({
-          view: geologicView,
-          unit: "metric"
-        }), "bottom-left");
-        geologicView.constraints.snapToZoom = false;
-        geologicView.constraints.maxScale = 0;
-        return geologicView;
-      });
-    }).then(function () {
-      updateGeologicFocus();
-      return geologicView;
-    }).catch(function (error) {
-      geologicLoadPromise = null;
-      if (geologicView) {
-        geologicView.destroy();
-        geologicView = null;
-      }
-      throw error;
-    });
-    return geologicLoadPromise;
   }
 
   function showMapError(message) {
@@ -487,75 +256,7 @@
     baseLayer = thermalLayer;
   }
 
-  function openGeologicMap() {
-    const savedState = activeImagery === "geologic"
-      ? (geologicView && geologicView.ready ? null : savedLeafletState)
-      : getCurrentMapState();
-    if (savedState) savedLeafletState = savedState;
-    if (activeImagery !== "geologic" && baseLayer) {
-      map.removeLayer(baseLayer);
-      baseLayer = null;
-    }
-    activeImagery = "geologic";
-    byId("map-source").textContent = "USGS GEOLOGIC";
-    byId("coordinate-system").textContent = "MARS 2000 · ROBINSON";
-    mapError.hidden = true;
-    byId("geologic-loading").hidden = false;
-    mapElement.hidden = true;
-    geologicMapElement.hidden = false;
-
-    return ensureGeologicView().then(function (view) {
-      if (activeImagery !== "geologic") return;
-      byId("geologic-loading").hidden = true;
-      view.resize();
-      if (pendingFullMars) {
-        pendingFullMars = false;
-        return view.goTo({
-          target: Object.assign({}, ROBINSON_EXTENT, {
-            spatialReference: view.spatialReference
-          })
-        }, { duration: 700 }).then(updateGeologicFocus);
-      }
-      if (savedState) {
-        const currentState = savedLeafletState || savedState;
-        const projected = projectRobinson(currentState.lat, currentState.lon);
-        return view.goTo({
-          center: new ArcGISPoint({
-            x: projected.x,
-            y: projected.y,
-            spatialReference: view.spatialReference
-          })
-        }, { animate: false }).then(function () {
-          return fitGeologicGroundWidth(view, currentState.widthMeters);
-        }).then(function () {
-          if (savedLeafletState) savedLeafletState.widthMeters = geologicGroundWidth(view);
-          updateGeologicFocus();
-        });
-      }
-      updateGeologicFocus();
-    }).catch(function (error) {
-      if (activeImagery !== "geologic") return;
-      byId("geologic-loading").hidden = true;
-      if (error.name !== "AbortError") {
-        console.error("Could not load the USGS Mars geologic map.", error);
-      }
-    });
-  }
-
   function changeMapZoom(delta) {
-    if (activeImagery === "geologic") {
-      if (geologicView && geologicView.ready && Number.isFinite(geologicView.scale)) {
-        geologicView.scale *= Math.pow(2, -delta);
-      } else if (savedLeafletState) {
-        savedLeafletState.zoom = Math.max(-1, Math.min(11, savedLeafletState.zoom + delta));
-        savedLeafletState.widthMeters = groundWidthForZoom(
-          savedLeafletState.lat,
-          savedLeafletState.zoom,
-          mapViewportWidth()
-        );
-      }
-      return;
-    }
     if (delta > 0) map.zoomIn();
     else map.zoomOut();
   }
@@ -597,103 +298,55 @@
         zIndexOffset: 500
       }).addTo(map);
     }
-    updateGeologicFocus();
-    if (!preserveView) {
-      if (activeImagery === "geologic" && geologicView &&
-          Number.isFinite(geologicView.scale)) {
-        const projected = projectRobinson(lat, lon);
-        const targetZoom = zoom || DEFAULT_ZOOM;
-        const targetWidth = groundWidthForZoom(lat, targetZoom, mapViewportWidth());
-        geologicView.goTo({
-          center: new ArcGISPoint({
-            x: projected.x,
-            y: projected.y,
-            spatialReference: geologicView.spatialReference
-          })
-        }, { duration: 700 }).then(function () {
-          return fitGeologicGroundWidth(geologicView, targetWidth);
-        }).then(function () {
-          savedLeafletState = {
-            lat: lat,
-            lon: lon,
-            zoom: targetZoom,
-            widthMeters: geologicGroundWidth(geologicView)
-          };
-        }, function (error) {
-          if (error.name !== "AbortError") showToast("Could not move to that location");
-        });
-      } else if (activeImagery === "geologic") {
-        savedLeafletState = {
-          lat: lat,
-          lon: lon,
-          zoom: zoom || DEFAULT_ZOOM,
-          widthMeters: groundWidthForZoom(
-            lat,
-            zoom || DEFAULT_ZOOM,
-            mapViewportWidth()
-          )
-        };
-      } else {
-        map.flyTo(latLng, zoom || DEFAULT_ZOOM, { duration: 0.7 });
-      }
-    }
+    if (!preserveView) map.flyTo(latLng, zoom || DEFAULT_ZOOM, { duration: 0.7 });
   }
 
   function replaceBaseLayer(key) {
-    if (key === "geologic") {
-      openGeologicMap();
-      return;
-    }
-    if (activeImagery === "geologic") {
-      const fullMarsPending = pendingFullMars;
-      const savedState = !fullMarsPending && geologicView && Number.isFinite(geologicView.scale)
-        ? getCurrentMapState()
-        : (!fullMarsPending ? savedLeafletState : null);
-      geologicMapElement.hidden = true;
-      mapElement.hidden = false;
-      map.invalidateSize({ pan: false });
-      if (fullMarsPending) {
-        pendingFullMars = false;
-        map.fitBounds(MARS_BOUNDS, { padding: [28, 28] });
-      } else if (savedState) {
-        const zoom = key === "thermal"
-          ? savedState.zoom
-          : zoomForGroundWidth(savedState.lat, savedState.widthMeters, map.getSize().x);
-        map.setView([savedState.lat, savedState.lon], zoom, { animate: false });
-      }
-    }
     activeImagery = key;
+    if (baseLayer) {
+      map.removeLayer(baseLayer);
+      baseLayer = null;
+    }
+    mapError.hidden = true;
+    byId("coordinate-system").textContent = "MARS 2000 · EQUIRECTANGULAR";
+
     if (key === "thermal") {
       byId("map-source").textContent = "ASU THEMIS · DAY + NIGHT IR";
-      byId("coordinate-system").textContent = "MARS 2000 · EQUIRECTANGULAR";
-      mapError.hidden = true;
-      if (baseLayer) {
-        map.removeLayer(baseLayer);
-        baseLayer = null;
-      }
       refreshThermalLayer();
       return;
     }
-    byId("map-source").textContent = "NASA TREK DATA";
-    byId("coordinate-system").textContent = "MARS 2000 · EQUIRECTANGULAR";
-    const next = L.esri.imageMapLayer({
-      url: IMAGERY[key],
-      opacity: 1,
-      useCors: false,
-      attribution: "Imagery: NASA Mars Trek / USGS"
-    });
+
+    let next;
+    if (key === "geologic") {
+      byId("map-source").textContent = "USGS GEOLOGIC";
+      next = L.tileLayer(GEOLOGIC_SERVICE + "/tile/{z}/{y}/{x}", {
+        minZoom: -1,
+        maxZoom: 11,
+        minNativeZoom: 0,
+        maxNativeZoom: 11,
+        noWrap: true,
+        bounds: MARS_BOUNDS,
+        attribution: "Geologic map: USGS SIM 3292 / NASA Mars Trek"
+      });
+    } else {
+      byId("map-source").textContent = "NASA TREK DATA";
+      next = L.esri.imageMapLayer({
+        url: IMAGERY[key],
+        opacity: 1,
+        useCors: false,
+        attribution: "Imagery: NASA Mars Trek / USGS"
+      });
+    }
     next.on("load", function () {
       if (key === activeImagery) mapError.hidden = true;
     });
     next.on("error", function () {
       if (key === activeImagery) {
-        showMapError("NASA Trek could not load the imagery. Check your connection and try again.");
+        showMapError("NASA Trek could not load the selected map style. Check your connection and try again.");
       }
     });
-    if (baseLayer) map.removeLayer(baseLayer);
     baseLayer = next.addTo(map);
   }
-
   function createMap() {
     if (!window.L || !L.esri) {
       mapError.hidden = false;
@@ -770,9 +423,7 @@
       byId("pointer-coordinates").textContent = "—";
     });
     map.on("tileerror", function () {
-      if (activeImagery !== "geologic") {
-        showMapError("NASA Trek could not load the imagery. Check your connection and try again.");
-      }
+      showMapError("NASA Trek could not load the selected map style. Check your connection and try again.");
     });
     map.on("moveend resize", refreshThermalLayer);
 
@@ -789,19 +440,7 @@
 
     byId("reset-view").addEventListener("click", function () {
       setFocus(ORIGIN.lat, ORIGIN.lon, LOCATIONS.jezero.name, LOCATIONS.jezero.region, DEFAULT_ZOOM, true, "jezero");
-      if (activeImagery === "geologic" && geologicView && geologicView.ready) {
-        geologicView.goTo({
-          target: Object.assign({}, ROBINSON_EXTENT, {
-            spatialReference: geologicView.spatialReference
-          })
-        }, { duration: 700 }).catch(function (error) {
-          if (error.name !== "AbortError") showToast("Could not fit the full Mars map");
-        });
-      } else if (activeImagery === "geologic") {
-        pendingFullMars = true;
-      } else {
-        map.fitBounds(MARS_BOUNDS, { padding: [28, 28] });
-      }
+      map.fitBounds(MARS_BOUNDS, { padding: [28, 28] });
     });
 
     byId("search-form").addEventListener("submit", function (event) {
@@ -824,21 +463,7 @@
     byId("zoom-out").addEventListener("click", function () { changeMapZoom(-1); });
     byId("retry-map").addEventListener("click", function () {
       mapError.hidden = true;
-      if (activeImagery === "geologic" && geologicView) {
-        geologicView.map.load().then(function () {
-          return geologicView.when();
-        }).then(function () {
-          mapError.hidden = true;
-        }).catch(function (error) {
-          if (error.name !== "AbortError") {
-            console.error("Could not reload the USGS Mars geologic map.", error);
-          }
-        });
-      } else if (activeImagery === "geologic") {
-        openGeologicMap();
-      } else {
-        replaceBaseLayer(activeImagery);
-      }
+      replaceBaseLayer(activeImagery);
     });
 
     addMobileControl();
@@ -999,7 +624,6 @@
       if (target.requestFullscreen) {
         target.requestFullscreen().then(function () {
           map.invalidateSize();
-          if (geologicView) geologicView.resize();
         }).catch(function () {
           showToast("Full screen is unavailable");
         });
@@ -1009,7 +633,6 @@
     } else if (document.exitFullscreen) {
       document.exitFullscreen().then(function () {
         map.invalidateSize();
-        if (geologicView) geologicView.resize();
       });
     }
   }
