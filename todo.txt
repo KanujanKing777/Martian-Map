@@ -11,5 +11,3 @@ Images putting
 
 
 
---> change the position of the layers change buttons if only needed
-

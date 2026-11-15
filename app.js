@@ -162,7 +162,7 @@
     viking: "#39ff14",
     relief: "#ff36d2",
     geologic: "#060606",
-    thermal: "#ffffff"
+    thermal: "#000000"
   };
   const byId = function (id) { return document.getElementById(id); };
   const mapError = byId("map-error");
