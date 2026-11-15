@@ -273,9 +273,11 @@
     list.replaceChildren();
 
     MISSIONS.forEach(function (mission, missionIndex) {
-      const card = document.createElement("article");
+      const card = document.createElement("details");
       card.className = "mission-card";
 
+      const summary = document.createElement("summary");
+      summary.className = "mission-summary";
       const heading = document.createElement("div");
       heading.className = "mission-card-heading";
       const index = document.createElement("span");
@@ -288,6 +290,10 @@
       const region = document.createElement("p");
       region.className = "mission-region";
       region.textContent = mission.region;
+      summary.append(heading, region);
+
+      const content = document.createElement("div");
+      content.className = "mission-details";
       const protocol = document.createElement("p");
       protocol.className = "mission-protocol";
       protocol.textContent = mission.protocol;
@@ -330,7 +336,8 @@
         targets.appendChild(row);
       });
 
-      card.append(heading, region, protocol, rationale, targets);
+      content.append(protocol, rationale, targets);
+      card.append(summary, content);
       list.appendChild(card);
     });
   }

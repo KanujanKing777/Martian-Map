@@ -158,11 +158,20 @@ button:focus-visible, input:focus-visible, a:focus-visible {
 .mission-count { margin: 0; color: var(--muted); font: 11px var(--mono); }
 .mission-intro { margin: 12px 0; color: var(--soft); font-size: 13px; line-height: 1.45; }
 .mission-list { min-height: 0; flex: 1 1 auto; overflow-y: auto; padding: 0 3px 0 0; scrollbar-color: #3a403b transparent; scrollbar-width: thin; }
-.mission-card { margin: 0 0 10px; padding: 13px 12px 11px; background: #1c201d; border: 1px solid var(--line); border-radius: 4px; }
+.mission-card { margin: 0 0 10px; overflow: hidden; background: #1c201d; border: 1px solid var(--line); border-radius: 4px; transition: border-color .16s ease, background .16s ease; }
+.mission-card:hover { border-color: var(--line-strong); }
+.mission-card[open] { border-color: rgba(229,108,67,.34); }
+.mission-summary { position: relative; display: block; padding: 13px 34px 11px 12px; cursor: pointer; list-style: none; }
+.mission-summary::-webkit-details-marker { display: none; }
+.mission-summary::after { position: absolute; top: 19px; right: 15px; width: 7px; height: 7px; content: ""; border-right: 1px solid #9da39a; border-bottom: 1px solid #9da39a; transform: rotate(45deg); transition: transform .16s ease; }
+.mission-card[open] .mission-summary::after { transform: rotate(225deg); }
+.mission-summary:focus-visible { outline: 2px solid var(--accent-light); outline-offset: -3px; }
 .mission-card-heading { display: grid; grid-template-columns: 25px minmax(0, 1fr); align-items: start; gap: 8px; }
 .mission-index { padding-top: 2px; color: var(--accent-light); font: 11px var(--mono); }
 .mission-card h3 { margin: 0; font-size: 14px; line-height: 1.35; font-weight: 600; }
-.mission-region { margin: 6px 0 10px 33px; color: #d0ab96; font: 11px var(--mono); line-height: 1.4; }
+.mission-region { margin: 6px 0 0 33px; color: #d0ab96; font: 11px var(--mono); line-height: 1.4; }
+.mission-details { padding: 0 12px 11px; }
+.mission-card[open] .mission-details { border-top: 1px solid var(--line); padding-top: 11px; }
 .mission-protocol, .mission-rationale { margin: 0 0 8px; color: var(--soft); font-size: 12px; line-height: 1.5; }
 .mission-rationale { color: #969d93; }
 .mission-targets { margin-top: 10px; border-top: 1px solid var(--line); }
@@ -398,7 +407,9 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   .route-planner { padding: 17px 16px; }
   .mission-browser { padding: 15px 13px 11px; }
   .mission-list { padding-right: 2px; }
-  .mission-card { padding: 11px 10px 9px; }
+  .mission-summary { padding: 11px 32px 9px 10px; }
+  .mission-details { padding-right: 10px; padding-bottom: 9px; padding-left: 10px; }
+  .mission-card[open] .mission-details { padding-top: 9px; }
   .search-section { padding: 16px 16px 13px !important; }
   .search-title-row { margin: 6px 0 10px; }
   .search-section h1 { font-size: 16px; }
