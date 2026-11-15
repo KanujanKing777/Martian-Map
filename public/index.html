@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="en" data-type="software">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="page-type" content="software">
+    <meta name="site-kind" content="software">
+    <meta name="theme-color" content="#111312">
+    <title>Mars Atlas — surface explorer</title>
+    <link rel="preconnect" href="https://trek.nasa.gov">
+    <link rel="preconnect" href="https://global-data.mars.asu.edu">
+    <link rel="preconnect" href="https://cdn.jsdelivr.net">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@photo-sphere-viewer/core@5.10.0/index.css">
+    <link rel="stylesheet" href="styles.css">
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+          "@photo-sphere-viewer/core": "https://cdn.jsdelivr.net/npm/@photo-sphere-viewer/core@5.10.0/index.module.js"
+        }
+      }
+    </script>
+    <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script defer src="https://unpkg.com/esri-leaflet@3.0.15/dist/esri-leaflet.js"></script>
+    <script defer src="app.js"></script>
+    <script type="module" src="panorama.js"></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#map">Skip to map</a>
+    <header class="topbar">
+      <a class="brand" href="#map" aria-label="Mars Atlas home">
+        <span class="brand-mark" aria-hidden="true"><span></span></span>
+        <span class="brand-name">MARS <span>ATLAS</span></span>
+      </a>
+      <div class="topbar-context">
+        <span class="status-dot" aria-hidden="true"></span>
+        <span>Surface explorer</span>
+        <span class="topbar-divider" aria-hidden="true"></span>
+        <span class="data-source" id="map-source">NASA TREK DATA</span>
+      </div>
+      <button class="icon-button topbar-reset" id="reset-view" type="button" title="Show the whole planet" aria-label="Show the whole planet">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 10a7.5 7.5 0 1 1 .8 5.3M4 4.8v5.7h5.7"/></svg>
+        <span>Full Mars</span>
+      </button>
+    </header>
+
+    <main class="workspace">
+      <aside class="sidebar" aria-label="Map controls">
+        <section class="control-section layer-switcher" aria-labelledby="imagery-title">
+          <div class="section-heading">
+            <div>
+              <div class="section-kicker">MAP STYLE</div>
+              <h2 id="imagery-title">Layers</h2>
+            </div>
+            <span class="section-index">01</span>
+          </div>
+          <div class="imagery-options" role="group" aria-label="Choose map imagery">
+            <button class="imagery-option is-selected" type="button" data-imagery="viking" aria-pressed="true" title="Optical">
+              <span class="imagery-swatch swatch-viking" aria-hidden="true"></span>
+              <span><strong>Optical</strong><small>Global mosaic · 232 m/px</small></span>
+              <span class="radio-indicator" aria-hidden="true"></span>
+            </button>
+            <button class="imagery-option" type="button" data-imagery="relief" aria-pressed="false" title="Topographic">
+              <span class="imagery-swatch swatch-relief" aria-hidden="true"></span>
+              <span><strong>Topographic</strong><small>MOLA + HRSC terrain</small></span>
+              <span class="radio-indicator" aria-hidden="true"></span>
+            </button>
+            <button class="imagery-option" type="button" data-imagery="geologic" aria-pressed="false" title="Geophysical">
+              <span class="imagery-swatch swatch-geologic" aria-hidden="true"></span>
+              <span><strong>Geophysical</strong><small>USGS global map · 1:20M</small></span>
+              <span class="radio-indicator" aria-hidden="true"></span>
+            </button>
+            <button class="imagery-option" type="button" data-imagery="thermal" aria-pressed="false" title="Thermal">
+              <span class="imagery-swatch swatch-thermal" aria-hidden="true"></span>
+              <span><strong>Thermal</strong><small>THEMIS infrared · day + night</small></span>
+              <span class="radio-indicator" aria-hidden="true"></span>
+            </button>
+          </div>
+        </section>
+        <div class="sidebar-scroll" id="sidebar-content">
+          <section class="search-section" aria-labelledby="search-title">
+            <div class="section-kicker">LOCATION</div>
+            <div class="search-title-row">
+              <h1 id="search-title">Find a place</h1>
+              <div class="search-title-actions">
+                <button class="icon-button mission-launch" id="open-missions" type="button" title="Browse mission experiments" aria-label="Browse mission experiments" aria-controls="mission-browser" aria-expanded="false">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5 14.4 9l5.9.5-4.5 3.9 1.3 5.7L12 16.2l-5.1 2.9 1.3-5.7-4.5-3.9L9.6 9 12 3.5Z"/><circle cx="19.5" cy="4.5" r="1"/></svg>
+                  <span>Missions</span>
+                </button>
+                <button class="icon-button route-launch" id="open-route-planner" type="button" title="Plan a route" aria-label="Plan a route" aria-controls="route-planner" aria-expanded="false">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="6" r="2.5"/><path d="M8.5 18H11a5 5 0 0 0 5-5V11a5 5 0 0 1 2-4"/></svg>
+                  <span>Go to</span>
+                </button>
+              </div>
+            </div>
+            <form class="search-form" id="search-form">
+              <label class="sr-only" for="place-search">Search a location or coordinates</label>
+              <svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.2 4.2"/></svg>
+              <input id="place-search" type="search" autocomplete="off" placeholder="Place or lat, lon">
+              <button type="submit" aria-label="Go to location">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13m-5-5 5 5-5 5"/></svg>
+              </button>
+              <div class="search-results" id="search-results" role="listbox" hidden></div>
+            </form>
+            <p class="search-hint">Try “Jezero Crater” or <span>18.4, 77.5</span></p>
+          </section>
+
+          <section class="focus-card" aria-labelledby="focus-title">
+            <div class="focus-heading">
+              <span class="focus-pin" aria-hidden="true"><span></span></span>
+              <span class="section-kicker">CURRENT FOCUS</span>
+              <button class="text-icon-button" id="copy-coordinates" type="button" aria-label="Copy focus coordinates" title="Copy coordinates">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="11" height="12" rx="1.5"/><path d="M16 8V5.8A1.8 1.8 0 0 0 14.2 4H6a2 2 0 0 0-2 2v8.2A1.8 1.8 0 0 0 5.8 16H8"/></svg>
+              </button>
+            </div>
+            <h2 id="focus-title">Jezero region</h2>
+            <div class="focus-coordinates" id="focus-coordinates">18.4000° N <span>·</span> 77.5000° E</div>
+            <div class="focus-meta"><span class="meta-marker"></span><span>Western Isidis Planitia</span></div>
+          </section>
+
+          <section class="control-section locations-section" aria-labelledby="locations-title">
+            <div class="section-heading">
+              <div>
+                <div class="section-kicker">QUICK ACCESS</div>
+                <h2 id="locations-title">Famous Spots</h2>
+              </div>
+              <span class="section-index">02</span>
+            </div>
+            <div class="location-list" id="location-list"></div>
+          </section>
+          <footer class="sidebar-footer">
+            <span class="nasa-mark" aria-hidden="true">N</span>
+            <span>Independent viewer · NASA Mars Trek + USGS + ASU THEMIS</span>
+          </footer>
+        </div>
+        <section class="mission-browser" id="mission-browser" role="dialog" aria-labelledby="missions-title" hidden>
+          <div class="mission-browser-header">
+            <div>
+              <div class="section-kicker">MISSION PROGRAM</div>
+              <h2 id="missions-title">Missions</h2>
+              <p id="mission-count" class="mission-count"></p>
+            </div>
+            <button class="route-close" id="close-missions" type="button" aria-label="Close missions" title="Close">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
+            </button>
+          </div>
+          <p class="mission-intro">Browse experiment plans and target sites. Go to a site to find a route from the current map center.</p>
+          <div class="mission-list" id="mission-list"></div>
+        </section>
+        <section class="route-planner" id="route-planner" role="dialog" aria-labelledby="route-title" hidden>
+          <div class="route-planner-header">
+            <div>
+              <div class="section-kicker">DIRECTIONS</div>
+              <h2 id="route-title">Go to</h2>
+            </div>
+            <button class="route-close" id="close-route-planner" type="button" aria-label="Close route planner" title="Close">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
+            </button>
+          </div>
+          <p class="route-intro">Choose a starting point and a destination on Mars.</p>
+
+          <form id="route-form" autocomplete="off">
+            <div class="route-pickers">
+              <div class="route-pick-row">
+                <span class="route-point route-point-from" aria-hidden="true">A</span>
+                <div class="route-input-wrap">
+                  <label for="route-from">From</label>
+                  <input id="route-from" type="text" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="route-from-options" placeholder="Choose a starting point">
+                  <div class="route-field-meta" id="route-from-meta">Place or latitude, longitude</div>
+                  <div class="route-suggestions" id="route-from-options" role="listbox" aria-label="Starting point suggestions" hidden></div>
+                </div>
+              </div>
+              <button class="route-swap" id="swap-route-points" type="button" aria-label="Swap starting point and destination" title="Swap locations">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7h12l-3-3m3 3-3 3M17 17H5l3 3m-3-3 3-3"/></svg>
+              </button>
+              <div class="route-pick-row">
+                <span class="route-point route-point-to" aria-hidden="true">B</span>
+                <div class="route-input-wrap">
+                  <label for="route-to">To</label>
+                  <input id="route-to" type="text" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="route-to-options" placeholder="Choose a destination">
+                  <div class="route-field-meta" id="route-to-meta">Place or latitude, longitude</div>
+                  <div class="route-suggestions" id="route-to-options" role="listbox" aria-label="Destination suggestions" hidden></div>
+                </div>
+              </div>
+            </div>
+            <div class="route-actions">
+              <button class="route-button route-button-primary" id="route-go" type="submit" disabled>Go</button>
+            </div>
+          </form>
+
+          <section class="route-preview" id="route-preview" aria-live="polite" hidden>
+            <div class="route-preview-tag" id="route-preview-tag">ROUTE PLANNER</div>
+            <h3 id="route-preview-title">Your locations are ready</h3>
+            <p class="route-preview-note" id="route-preview-note">Routes are calculated from available numeric terrain data. Hazards without a suitable data layer are excluded.</p>
+            <div class="route-preview-metrics" id="route-preview-metrics" role="group" aria-label="Route details" hidden></div>
+            <div class="route-preview-stop">
+              <span class="route-point route-point-from" aria-hidden="true">A</span>
+              <div><small>FROM</small><strong id="route-preview-from"></strong><span id="route-preview-from-coords"></span></div>
+            </div>
+            <div class="route-preview-connector" aria-hidden="true"></div>
+            <div class="route-preview-stop">
+              <span class="route-point route-point-to" aria-hidden="true">B</span>
+              <div><small>TO</small><strong id="route-preview-to"></strong><span id="route-preview-to-coords"></span></div>
+            </div>
+            <button class="route-button route-button-secondary route-edit" id="edit-route" type="button">Change locations</button>
+          </section>
+          <p class="route-status" id="route-status" role="status" aria-live="polite"></p>
+        </section>
+      </aside>
+
+      <section class="map-stage" aria-label="Interactive Mars map">
+        <div id="map" role="application" aria-label="Pan and zoom across Mars"></div>
+        <div class="map-zoom-controls" role="group" aria-label="Map zoom">
+          <button id="zoom-in" type="button" aria-label="Zoom in">+</button>
+          <button id="zoom-out" type="button" aria-label="Zoom out">−</button>
+        </div>
+        <button class="map-person-button" id="open-panorama" type="button" aria-label="Open Jezero surface view" title="Open Jezero surface view" aria-haspopup="dialog" aria-controls="panorama-overlay">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="4.8" r="2.3" fill="currentColor"/>
+            <path d="M8.7 9.2c0-1 .8-1.8 1.8-1.8h3c1 0 1.8.8 1.8 1.8v4.1h-1.5l.8 7.2h-2l-.8-5.3-.8 5.3h-2l.8-7.2H8.7V9.2Zm-2.1 1.2 1.1-2 .9.7-1 2.2-1.7 3.1-.9-.5 1.6-3.5Zm10.8-2 .9-.7 1.1 2 1.6 3.5-.9.5-1.7-3.1-1-2.2Z" fill="currentColor"/>
+          </svg>
+        </button>
+        <section class="panorama-overlay" id="panorama-overlay" role="dialog" aria-modal="true" aria-label="Jezero crater surface view" hidden>
+          <div class="panorama-viewer" id="panorama-viewer"></div>
+          <div class="panorama-topbar">
+            <button class="panorama-close" id="close-panorama" type="button" aria-label="Close surface view" title="Close surface view">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
+            </button>
+            <span class="panorama-count" id="panorama-count" aria-live="polite">1 / 56</span>
+          </div>
+          <div class="panorama-nav" aria-label="Image navigation">
+            <button id="panorama-next" type="button" aria-label="Next image" title="Next image">▲</button>
+            <button id="panorama-previous" type="button" aria-label="Previous image" title="Previous image">▼</button>
+          </div>
+          <div class="panorama-status" id="panorama-status" role="status" aria-live="polite" hidden></div>
+        </section>
+        <div class="map-topline">
+          <div class="map-location-label">
+            <span class="location-live-dot" aria-hidden="true"></span>
+            <span id="map-place-title">Jezero Crater</span>
+            <span class="map-label-divider">/</span>
+            <span id="map-region-title">Isidis Planitia</span>
+          </div>
+          <div class="map-actions">
+            <button class="map-action" id="share-view" type="button" title="Copy a link to this map view">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.7 10.7 6.6-4.4m-6.6 7 6.6 4.4"/></svg>
+              <span>Share</span>
+            </button>
+            <button class="map-action" id="fullscreen-map" type="button" title="Toggle full screen">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4H4v4m12-4h4v4M4 16v4h4m12-4v4h-4"/></svg>
+              <span>Full screen</span>
+            </button>
+          </div>
+        </div>
+        <div class="map-scale" id="map-scale" aria-label="Map scale"></div>
+        <div class="map-bottomline">
+          <div class="cursor-readout">
+            <span class="readout-label">POINTER</span>
+            <span id="pointer-coordinates">—</span>
+          </div>
+          <div class="map-layer-legend" id="layer-legend" role="note" aria-live="polite" hidden>
+            <span class="layer-legend-swatch" id="layer-legend-swatch" aria-hidden="true"></span>
+            <span id="layer-legend-text"></span>
+          </div>
+          <div class="map-bottom-right">
+            <span class="coordinate-system" id="coordinate-system">MARS 2000 · EQUIRECTANGULAR</span>
+            <div class="map-north" aria-label="North is up"><span>N</span><svg viewBox="0 0 16 22" aria-hidden="true"><path d="M8 1 14 18 8 14 2 18z"/></svg></div>
+          </div>
+        </div>
+        <div class="map-error" id="map-error" role="alert" hidden>
+          <div class="error-mark">!</div>
+          <div><strong>Map data unavailable</strong><p id="map-error-message">The selected map service could not load. Check your connection and try again.</p></div>
+          <button id="retry-map" type="button">Retry</button>
+        </div>
+        <div class="toast" id="toast" role="status" aria-live="polite"></div>
+      </section>
+    </main>
+  </body>
+</html>

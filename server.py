@@ -410,8 +410,8 @@ def _validate_point(value: Any, label: str) -> dict[str, float]:
 
 
 def main() -> None:
-    host = os.environ.get("MARS_ATLAS_HOST", "127.0.0.1")
-    port = int(os.environ.get("MARS_ATLAS_PORT", "8000"))
+    host = "0.0.0.0"
+    port = int(os.environ.get("PORT", os.environ.get("MARS_ATLAS_PORT", "8000")))
     server = ThreadingHTTPServer((host, port), MarsAtlasHandler)
     print(f"Mars Atlas with route planning: http://{host}:{port}")
     print("Press Ctrl+C to stop.")
