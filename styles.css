@@ -178,7 +178,13 @@ button:focus-visible, input:focus-visible, a:focus-visible {
 .route-preview-tag { color: #c4a18f; font: 12px var(--mono); letter-spacing: .04em; }
 .route-preview h3 { margin: 9px 0 6px; font-size: 17px; font-weight: 600; }
 .route-preview-note { margin: 0 0 19px; color: var(--soft); font-size: 13px; line-height: 1.5; }
-.route-preview-metrics { margin: 0 0 20px; padding: 10px 11px; color: #d0d3ca; background: #171a17; border-left: 2px solid var(--accent-light); font-size: 13px; line-height: 1.55; }
+.route-preview-metrics { display: grid; gap: 0; margin: 0 0 20px; padding: 5px 12px; color: #d0d3ca; background: #171a17; border: 1px solid var(--line); border-left: 2px solid var(--accent-light); border-radius: 3px; font-size: 13px; line-height: 1.5; }
+.route-preview-metrics[hidden] { display: none; }
+.route-metric-row { display: grid; grid-template-columns: 78px minmax(0, 1fr); gap: 10px; align-items: start; padding: 8px 0; border-bottom: 1px solid rgba(224,229,218,.09); }
+.route-metric-row:last-child { border-bottom: 0; }
+.route-metric-label { color: var(--muted); font: 11px var(--mono); letter-spacing: .025em; }
+.route-metric-value { min-width: 0; color: #e0e2da; overflow-wrap: anywhere; }
+.route-metric-row:first-child .route-metric-value { color: var(--ink); font-size: 15px; font-weight: 600; }
 .route-preview-stop { display: grid; grid-template-columns: 22px minmax(0, 1fr); align-items: center; gap: 10px; }
 .route-preview-stop > div { display: grid; min-width: 0; gap: 4px; }
 .route-preview-stop small { color: var(--muted); font: 12px var(--mono); }

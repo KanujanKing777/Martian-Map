@@ -579,11 +579,27 @@
       const used = ["MOLA elevation: slope and local roughness"];
       if (result.data && result.data.tesThermalInertia) used.push("TES thermal inertia");
       const omitted = (result.omitted || []).join(", ");
-      byId("route-preview-metrics").textContent =
-        "Distance " + Number(result.distanceKm).toLocaleString(undefined, { maximumFractionDigits: 2 }) +
-        " km · grid " + Number(result.gridCellKm).toLocaleString(undefined, { maximumFractionDigits: 2 }) +
-        " km. Used: " + used.join("; ") + ". Not scored: " + omitted + ".";
-      byId("route-preview-metrics").hidden = false;
+      const metrics = [
+        ["Distance", Number(result.distanceKm).toLocaleString(undefined, { maximumFractionDigits: 2 }) + " km"],
+        ["Grid cell", Number(result.gridCellKm).toLocaleString(undefined, { maximumFractionDigits: 2 }) + " km"],
+        ["Data used", used.join("; ")],
+        
+      ];
+      const metricsElement = byId("route-preview-metrics");
+      metricsElement.replaceChildren();
+      metrics.forEach(function (item) {
+        const row = document.createElement("div");
+        row.className = "route-metric-row";
+        const label = document.createElement("span");
+        label.className = "route-metric-label";
+        label.textContent = item[0];
+        const value = document.createElement("span");
+        value.className = "route-metric-value";
+        value.textContent = item[1];
+        row.append(label, value);
+        metricsElement.appendChild(row);
+      });
+      metricsElement.hidden = false;
       byId("route-status").textContent = "Route line shown on the map.";
     } catch (error) {
       byId("route-preview").hidden = true;
