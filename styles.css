@@ -127,13 +127,27 @@ button:focus-visible, input:focus-visible, a:focus-visible {
 .sidebar {
   position: relative;
   z-index: 5;
+  --layer-switcher-height: 76px;
+  display: flex;
+  flex-direction: column;
   width: 350px;
   flex: 0 0 350px;
+  min-height: 0;
   background: var(--panel);
   border-right: 1px solid var(--line);
 }
-.sidebar-scroll { height: 100%; overflow-y: auto; scrollbar-color: #3a403b transparent; scrollbar-width: thin; }
-.route-planner { position: absolute; z-index: 8; inset: 0; display: flex; flex-direction: column; gap: 0; overflow-y: auto; padding: 23px 22px; background: var(--panel); }
+.sidebar-scroll { height: auto; min-height: 0; flex: 1 1 auto; overflow-y: auto; scrollbar-color: #3a403b transparent; scrollbar-width: thin; }
+.layer-switcher { position: relative; z-index: 9; display: block; height: var(--layer-switcher-height); flex: 0 0 var(--layer-switcher-height); box-sizing: border-box; padding: 7px 15px !important; background: var(--panel); border: 0; border-bottom: 1px solid var(--line); }
+.layer-switcher .section-heading { margin-bottom: 5px; }
+.layer-switcher .section-heading h2 { margin-top: 1px; font-size: 13px; }
+.layer-switcher .section-kicker { font-size: 9px; }
+.layer-switcher .section-index { font-size: 9px; }
+.layer-switcher .imagery-options { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
+.layer-switcher .imagery-option { min-width: 0; min-height: 29px; justify-content: center; padding: 5px 2px; }
+.layer-switcher .imagery-swatch, .layer-switcher .imagery-option small, .layer-switcher .radio-indicator { display: none; }
+.layer-switcher .imagery-option > span:nth-child(2) { min-width: 0; }
+.layer-switcher .imagery-option strong { overflow: hidden; font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+.route-planner { position: absolute; z-index: 8; top: var(--layer-switcher-height); right: 0; bottom: 0; left: 0; display: flex; flex-direction: column; gap: 0; overflow-y: auto; padding: 23px 22px; background: var(--panel); }
 .route-planner[hidden], .route-preview[hidden] { display: none; }
 .sidebar.is-routing .sidebar-scroll { display: none; }
 .route-planner-header { display: flex; align-items: center; justify-content: space-between; padding-bottom: 17px; border-bottom: 1px solid var(--line); }
@@ -355,7 +369,7 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   }
   .sidebar.is-open { transform: translateY(0); }
   .sidebar-scroll { max-height: min(58vh, 500px); }
-  .sidebar.is-routing { max-height: min(76vh, 660px); }
+  .sidebar.is-routing { height: min(76vh, 660px); max-height: min(76vh, 660px); }
   .route-planner { padding: 17px 16px; }
   .search-section { padding: 16px 16px 13px !important; }
   .search-title-row { margin: 6px 0 10px; }
@@ -364,6 +378,9 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   .focus-card h2 { margin-top: 8px; }
   .focus-meta { margin-top: 8px; }
   .control-section { padding-top: 13px !important; padding-bottom: 11px; }
+  .sidebar .layer-switcher { padding: 7px 12px !important; }
+  .layer-switcher .section-heading { margin-bottom: 5px; }
+  .layer-switcher .imagery-option { min-height: 29px; }
   .layer-row { min-height: 49px; }
   .locations-section { padding-top: 13px !important; }
   .location-row { min-height: 35px; }

@@ -36,6 +36,37 @@
 
     <main class="workspace">
       <aside class="sidebar" aria-label="Map controls">
+        <section class="control-section layer-switcher" aria-labelledby="imagery-title">
+          <div class="section-heading">
+            <div>
+              <div class="section-kicker">MAP STYLE</div>
+              <h2 id="imagery-title">Layers</h2>
+            </div>
+            <span class="section-index">01</span>
+          </div>
+          <div class="imagery-options" role="group" aria-label="Choose map imagery">
+            <button class="imagery-option is-selected" type="button" data-imagery="viking" aria-pressed="true" title="Optical">
+              <span class="imagery-swatch swatch-viking" aria-hidden="true"></span>
+              <span><strong>Optical</strong><small>Global mosaic · 232 m/px</small></span>
+              <span class="radio-indicator" aria-hidden="true"></span>
+            </button>
+            <button class="imagery-option" type="button" data-imagery="relief" aria-pressed="false" title="Topographic">
+              <span class="imagery-swatch swatch-relief" aria-hidden="true"></span>
+              <span><strong>Topographic</strong><small>MOLA + HRSC terrain</small></span>
+              <span class="radio-indicator" aria-hidden="true"></span>
+            </button>
+            <button class="imagery-option" type="button" data-imagery="geologic" aria-pressed="false" title="Geophysical">
+              <span class="imagery-swatch swatch-geologic" aria-hidden="true"></span>
+              <span><strong>Geophysical</strong><small>USGS global map · 1:20M</small></span>
+              <span class="radio-indicator" aria-hidden="true"></span>
+            </button>
+            <button class="imagery-option" type="button" data-imagery="thermal" aria-pressed="false" title="Thermal">
+              <span class="imagery-swatch swatch-thermal" aria-hidden="true"></span>
+              <span><strong>Thermal</strong><small>THEMIS infrared · day + night</small></span>
+              <span class="radio-indicator" aria-hidden="true"></span>
+            </button>
+          </div>
+        </section>
         <div class="sidebar-scroll" id="sidebar-content">
           <section class="search-section" aria-labelledby="search-title">
             <div class="section-kicker">LOCATION</div>
@@ -69,38 +100,6 @@
             <h2 id="focus-title">Jezero region</h2>
             <div class="focus-coordinates" id="focus-coordinates">18.4000° N <span>·</span> 77.5000° E</div>
             <div class="focus-meta"><span class="meta-marker"></span><span>Western Isidis Planitia</span></div>
-          </section>
-
-          <section class="control-section" aria-labelledby="imagery-title">
-            <div class="section-heading">
-              <div>
-                <div class="section-kicker">MAP STYLE</div>
-                <h2 id="imagery-title">Layers</h2>
-              </div>
-              <span class="section-index">01</span>
-            </div>
-            <div class="imagery-options" role="group" aria-label="Choose map imagery">
-              <button class="imagery-option is-selected" type="button" data-imagery="viking" aria-pressed="true">
-                <span class="imagery-swatch swatch-viking" aria-hidden="true"></span>
-                <span><strong>Optical</strong><small>Global mosaic · 232 m/px</small></span>
-                <span class="radio-indicator" aria-hidden="true"></span>
-              </button>
-              <button class="imagery-option" type="button" data-imagery="relief" aria-pressed="false">
-                <span class="imagery-swatch swatch-relief" aria-hidden="true"></span>
-                <span><strong>Topographic</strong><small>MOLA + HRSC terrain</small></span>
-                <span class="radio-indicator" aria-hidden="true"></span>
-              </button>
-              <button class="imagery-option" type="button" data-imagery="geologic" aria-pressed="false">
-                <span class="imagery-swatch swatch-geologic" aria-hidden="true"></span>
-                <span><strong>Geophysical</strong><small>USGS global map · 1:20M</small></span>
-                <span class="radio-indicator" aria-hidden="true"></span>
-              </button>
-              <button class="imagery-option" type="button" data-imagery="thermal" aria-pressed="false">
-                <span class="imagery-swatch swatch-thermal" aria-hidden="true"></span>
-                <span><strong>Thermal</strong><small>THEMIS infrared · day + night</small></span>
-                <span class="radio-indicator" aria-hidden="true"></span>
-              </button>
-            </div>
           </section>
 
           <section class="control-section locations-section" aria-labelledby="locations-title">
