@@ -9,11 +9,22 @@
     <title>Mars Atlas — surface explorer</title>
     <link rel="preconnect" href="https://trek.nasa.gov">
     <link rel="preconnect" href="https://global-data.mars.asu.edu">
+    <link rel="preconnect" href="https://cdn.jsdelivr.net">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@photo-sphere-viewer/core@5.10.0/index.css">
     <link rel="stylesheet" href="styles.css">
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+          "@photo-sphere-viewer/core": "https://cdn.jsdelivr.net/npm/@photo-sphere-viewer/core@5.10.0/index.module.js"
+        }
+      }
+    </script>
     <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script defer src="https://unpkg.com/esri-leaflet@3.0.15/dist/esri-leaflet.js"></script>
     <script defer src="app.js"></script>
+    <script type="module" src="panorama.js"></script>
   </head>
   <body>
     <a class="skip-link" href="#map">Skip to map</a>
@@ -204,6 +215,26 @@
           <button id="zoom-in" type="button" aria-label="Zoom in">+</button>
           <button id="zoom-out" type="button" aria-label="Zoom out">−</button>
         </div>
+        <button class="map-person-button" id="open-panorama" type="button" aria-label="Open Jezero surface view" title="Open Jezero surface view" aria-haspopup="dialog" aria-controls="panorama-overlay">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="4.8" r="2.3" fill="currentColor"/>
+            <path d="M8.7 9.2c0-1 .8-1.8 1.8-1.8h3c1 0 1.8.8 1.8 1.8v4.1h-1.5l.8 7.2h-2l-.8-5.3-.8 5.3h-2l.8-7.2H8.7V9.2Zm-2.1 1.2 1.1-2 .9.7-1 2.2-1.7 3.1-.9-.5 1.6-3.5Zm10.8-2 .9-.7 1.1 2 1.6 3.5-.9.5-1.7-3.1-1-2.2Z" fill="currentColor"/>
+          </svg>
+        </button>
+        <section class="panorama-overlay" id="panorama-overlay" role="dialog" aria-modal="true" aria-label="Jezero crater surface view" hidden>
+          <div class="panorama-viewer" id="panorama-viewer"></div>
+          <div class="panorama-topbar">
+            <button class="panorama-close" id="close-panorama" type="button" aria-label="Close surface view" title="Close surface view">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
+            </button>
+            <span class="panorama-count" id="panorama-count" aria-live="polite">1 / 56</span>
+          </div>
+          <div class="panorama-nav" aria-label="Image navigation">
+            <button id="panorama-next" type="button" aria-label="Next image" title="Next image">▲</button>
+            <button id="panorama-previous" type="button" aria-label="Previous image" title="Previous image">▼</button>
+          </div>
+          <div class="panorama-status" id="panorama-status" role="status" aria-live="polite" hidden></div>
+        </section>
         <div class="map-topline">
           <div class="map-location-label">
             <span class="location-live-dot" aria-hidden="true"></span>

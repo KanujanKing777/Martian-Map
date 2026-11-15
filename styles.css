@@ -323,6 +323,23 @@ button:focus-visible, input:focus-visible, a:focus-visible {
 .map-stage { position: relative; min-width: 0; flex: 1; background: #494a3c; }
 #map { position: absolute; inset: 0; background: #44463a; }
 .map-zoom-controls { position: absolute; z-index: 600; top: 64px; right: 16px; display: grid; overflow: hidden; border: 1px solid rgba(228,230,221,.2); border-radius: 4px; box-shadow: 0 4px 18px rgba(0,0,0,.24); }
+.map-person-button { position: absolute; z-index: 610; right: 16px; bottom: 57px; display: grid; width: 38px; height: 40px; place-items: center; padding: 0; color: #e4c6b2; background: rgba(22,25,22,.94); border: 1px solid rgba(228,230,221,.2); border-radius: 4px; box-shadow: 0 4px 18px rgba(0,0,0,.24); cursor: pointer; transition: color .16s ease, background .16s ease, border-color .16s ease; }
+.map-person-button:hover { color: #fff1e6; background: #242824; border-color: rgba(228,230,221,.42); }
+.map-person-button svg { width: 20px; height: 23px; }
+.panorama-overlay { position: fixed; z-index: 1200; inset: 0; overflow: hidden; color: #f3f1e9; background: #14181c; }
+.panorama-overlay[hidden], .panorama-status[hidden] { display: none; }
+.panorama-viewer { position: absolute; inset: 0; width: 100%; height: 100%; }
+.panorama-topbar { position: absolute; z-index: 20; top: 16px; right: 16px; left: 16px; display: flex; align-items: center; justify-content: space-between; pointer-events: none; }
+.panorama-close { display: grid; width: 42px; height: 42px; place-items: center; padding: 0; color: #f1eee5; background: rgba(20,24,28,.78); border: 1px solid rgba(255,255,255,.2); border-radius: 50%; box-shadow: 0 2px 8px rgba(0,0,0,.35); cursor: pointer; pointer-events: auto; backdrop-filter: blur(4px); }
+.panorama-close:hover { background: rgba(60,70,80,.9); }
+.panorama-close svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; }
+.panorama-count { display: none; padding: 7px 10px; color: #f1eee5; background: rgba(20,24,28,.72); border: 1px solid rgba(255,255,255,.14); border-radius: 999px; font: 11px var(--mono); font-variant-numeric: tabular-nums; pointer-events: auto; backdrop-filter: blur(4px); }
+.panorama-nav { position: absolute; z-index: 20; right: 20px; bottom: 70px; display: flex; flex-direction: column; gap: 10px; }
+.panorama-nav button { display: grid; width: 52px; height: 52px; place-items: center; padding: 0; color: #fff; background: rgba(20,24,28,.75); border: 0; border-radius: 50%; box-shadow: 0 2px 8px rgba(0,0,0,.4); cursor: pointer; font-size: 20px; line-height: 1; backdrop-filter: blur(4px); transition: background .16s ease, opacity .16s ease, transform .1s ease; }
+.panorama-nav button:hover:not(:disabled) { background: rgba(60,70,80,.9); }
+.panorama-nav button:active:not(:disabled) { transform: scale(.97); }
+.panorama-nav button:disabled { opacity: .38; cursor: default; }
+.panorama-status { position: absolute; z-index: 25; top: 50%; left: 50%; max-width: calc(100% - 32px); padding: 10px 14px; color: #f1eee5; background: rgba(20,24,28,.8); border: 1px solid rgba(255,255,255,.15); border-radius: 4px; box-shadow: 0 4px 18px rgba(0,0,0,.3); font-size: 13px; text-align: center; transform: translate(-50%, -50%); pointer-events: none; }
 .map-zoom-controls button { width: 34px; height: 34px; padding: 0; color: #e0e1d9; background: rgba(22,25,22,.94); border: 0; border-bottom: 1px solid rgba(228,230,221,.13); cursor: pointer; font-size: 20px; line-height: 32px; }
 .map-zoom-controls button:last-child { border-bottom: 0; }
 .map-zoom-controls button:hover { color: var(--accent-light); background: #242824; }
@@ -441,6 +458,10 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   .map-bottomline { min-height: 39px; padding: 0 10px; }
   .map-layer-legend { top: 2px; right: 10px; gap: 4px; font-size: 8px; }
   .layer-legend-swatch { width: 20px; height: 6px; }
+  .map-person-button { right: 10px; bottom: 92px; }
+  .panorama-topbar { top: 10px; right: 10px; left: 10px; }
+  .panorama-nav { right: 14px; bottom: 68px; gap: 8px; }
+  .panorama-nav button { width: 46px; height: 46px; }
   .map-bottom-right { gap: 9px; }
   .coordinate-system { display: none; }
   .map-scale { bottom: 49px; left: 10px; }
