@@ -158,6 +158,12 @@
     relief: SERVICES + "Mars_MOLA_blend200ppx_HRSC_ClrShade_clon0dd_200mpp/ImageServer",
     geologic: GEOLOGIC_SERVICE
   };
+  const ROUTE_COLORS = {
+    viking: "#39ff14",
+    relief: "#ff36d2",
+    geologic: "#060606",
+    thermal: "#000000"
+  };
   const byId = function (id) { return document.getElementById(id); };
   const mapError = byId("map-error");
   const mapElement = byId("map");
@@ -307,6 +313,7 @@
 
   function replaceBaseLayer(key) {
     activeImagery = key;
+    if (plannedRouteLayer) plannedRouteLayer.setStyle({ color: ROUTE_COLORS[key] || ROUTE_COLORS.viking });
     if (baseLayer) {
       map.removeLayer(baseLayer);
       baseLayer = null;
@@ -504,7 +511,7 @@
     }
     plannedRouteLayer = L.polyline(coordinates, {
       pane: "plannedRoutePane",
-      color: "#f28b59",
+      color: ROUTE_COLORS[activeImagery] || ROUTE_COLORS.viking,
       weight: 4,
       opacity: 0.96,
       lineCap: "round",

@@ -1,10 +1,4 @@
---> Put name of the place going to too
---> instead of map center, put the lat, long
 
---> put Total distance only in the after calculation UI
- of the left side panel
---> change the color of best path, so that it is well seen 
-    in all the views
 --> Scientific objectives like boxwork formation etc...
     and finding the place accordingly
 
