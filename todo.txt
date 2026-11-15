@@ -9,5 +9,5 @@ Images putting
 -> atleast put it like, business images
 --> this shall appear, when in person view is clicked
 
-
-
+path thickness
+-->color representation 

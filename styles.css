@@ -148,6 +148,13 @@ button:focus-visible, input:focus-visible, a:focus-visible {
 .layer-switcher .imagery-option small, .layer-switcher .radio-indicator { display: none; }
 .layer-switcher .imagery-option > span:nth-child(2) { min-width: 0; }
 .layer-switcher .imagery-option strong { overflow: hidden; font-size: 11px; line-height: 1.1; text-align: center; text-overflow: ellipsis; white-space: normal; }
+.map-layer-legend { position: absolute; top: 3px; right: 15px; display: flex; max-width: calc(100% - 30px); align-items: center; gap: 6px; color: #c5c8be; font-size: 9px; line-height: 1.2; white-space: nowrap; pointer-events: auto; }
+.map-layer-legend[hidden] { display: none; }
+.map-bottomline.has-layer-legend .map-bottom-right { align-self: flex-end; margin-bottom: 0; }
+.layer-legend-swatch { width: 24px; height: 7px; flex: 0 0 auto; border: 1px solid rgba(255,255,255,.18); border-radius: 2px; }
+.layer-legend-swatch.is-relief { background: linear-gradient(90deg, #4a7c59, #9bb26b 25%, #e3d18a 50%, #c9945a 75%, #8b5e3c); }
+.layer-legend-swatch.is-geologic { background: linear-gradient(90deg, #d6ad76 0 24%, #6f9c9b 24% 43%, #c87858 43% 60%, #e0cc8a 60% 78%, #8c7894 78%); }
+.layer-legend-swatch.is-thermal { background: linear-gradient(90deg, #3565b5, #55a98b 35%, #ddcf65 68%, #c64235); }
 .route-planner { position: absolute; z-index: 8; top: var(--layer-switcher-height); right: 0; bottom: 0; left: 0; display: flex; flex-direction: column; gap: 0; overflow-y: auto; padding: 23px 22px; background: var(--panel); }
 .route-planner[hidden], .route-preview[hidden] { display: none; }
 .sidebar.is-routing .sidebar-scroll, .sidebar.is-missions .sidebar-scroll { display: none; }
@@ -287,9 +294,9 @@ button:focus-visible, input:focus-visible, a:focus-visible {
 .imagery-option.is-selected { background: rgba(255,255,255,.035); border-color: var(--line-strong); }
 .imagery-swatch { display: block; width: 42px; height: 32px; flex: 0 0 auto; border: 1px solid rgba(255,255,255,.12); border-radius: 2px; }
 .swatch-viking { background: linear-gradient(140deg, #303f37 0%, #9b6849 40%, #c49770 57%, #424b40 58%, #805b46 100%); }
-.swatch-relief { background: linear-gradient(150deg, #646855, #b88a69 35%, #353d37 36%, #a28c70 63%, #555b4d 64%); }
+.swatch-relief { background: linear-gradient(150deg, #4a7c59, #c9945a 35%, #8b5e3c 36%, #e3d18a 63%, #9bb26b 64%); }
 .swatch-geologic { background: linear-gradient(135deg, #d6ad76 0 24%, #6f9c9b 24% 43%, #c87858 43% 60%, #e0cc8a 60% 78%, #8c7894 78%); }
-.swatch-thermal { background: linear-gradient(135deg, #1a0505 0 25%, #5c0a0a 25% 48%, #b81d1d 48% 61%, #ff6a2b 61% 75%, #2b0707 75%); }
+.swatch-thermal { background: linear-gradient(135deg, #3565b5, #55a98b 35%, #ddcf65 68%, #c64235); }
 .imagery-option strong, .imagery-option small { display: block; }
 .imagery-option strong { font-size: 11px; font-weight: 500; }
 .imagery-option small { margin-top: 4px; color: var(--muted); font-size: 10px; }
@@ -432,6 +439,8 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   .map-action { width: 31px; height: 30px; justify-content: center; padding: 0; }
   .map-action span { display: none; }
   .map-bottomline { min-height: 39px; padding: 0 10px; }
+  .map-layer-legend { top: 2px; right: 10px; gap: 4px; font-size: 8px; }
+  .layer-legend-swatch { width: 20px; height: 6px; }
   .map-bottom-right { gap: 9px; }
   .coordinate-system { display: none; }
   .map-scale { bottom: 49px; left: 10px; }

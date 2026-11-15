@@ -238,7 +238,7 @@
   };
   const ROUTE_COLORS = {
     viking: "#39ff14",
-    relief: "#ff36d2",
+    relief: "#ffbef1",
     geologic: "#060606",
     thermal: "#000000"
   };
@@ -493,8 +493,33 @@
     if (!preserveView) map.flyTo(latLng, zoom || DEFAULT_ZOOM, { duration: 0.7 });
   }
 
+  function updateLayerLegend(key) {
+    const legend = byId("layer-legend");
+    const labels = {
+      relief: {
+        text: "Color = elevation · shade = relief",
+        title: "NASA Trek describes this layer as a color hillshade blend; its layer description does not list numeric color intervals."
+      },
+      geologic: {
+        text: "Distinct colors = geologic units",
+        title: "Each mapped color identifies a geologic map unit."
+      },
+      thermal: {
+        text: "Cool night: blue/green · warm: red/yellow",
+        title: "THEMIS false color: dust and sand are cooler at night; exposed rock and compacted material retain more heat."
+      }
+    };
+    legend.hidden = !labels[key];
+    legend.closest(".map-bottomline").classList.toggle("has-layer-legend", Boolean(labels[key]));
+    if (!labels[key]) return;
+    byId("layer-legend-swatch").className = "layer-legend-swatch is-" + key;
+    byId("layer-legend-text").textContent = labels[key].text;
+    legend.title = labels[key].title;
+  }
+
   function replaceBaseLayer(key) {
     activeImagery = key;
+    updateLayerLegend(key);
     if (plannedRouteLayer) plannedRouteLayer.setStyle({ color: ROUTE_COLORS[key] || ROUTE_COLORS.viking });
     if (baseLayer) {
       map.removeLayer(baseLayer);
