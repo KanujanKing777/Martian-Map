@@ -153,6 +153,84 @@
   const SEARCHABLE_PLACES = Object.keys(LOCATIONS).map(function (key) {
     return Object.assign({ key: key }, LOCATIONS[key]);
   });
+  const MISSIONS = [
+    {
+      title: "Subsurface Ice Mining & Purification",
+      region: "Arcadia Planitia · Northern Lowlands",
+      protocol: "Drill 1-2 meters through surface regolith to reach buried ice. Test thermal extraction and filtration systems that remove perchlorates for potable water and fuel.",
+      rationale: "Shallow water ice beneath flat, low-elevation terrain makes this a candidate for heavy landings and in-situ resource use.",
+      targets: [
+        { name: "Candidate Site AP-1", lat: 39.800, lonEast: 202.100 },
+        { name: "Alternate Site AP-9", lat: 40.024, lonEast: 203.331 }
+      ]
+    },
+    {
+      title: "Scaled-Up Rocket Fuel & Oxygen Production",
+      region: "Arcadia Planitia · Northern Lowlands",
+      protocol: "Run a high-capacity Sabatier reactor using extracted water and atmospheric CO2. Produce and liquefy methane and oxygen propellant for an Earth return.",
+      rationale: "Co-locating fuel synthesis with shallow ice deposits reduces transport and tests closed-loop resource production.",
+      targets: [
+        { name: "Candidate Site AP-1", lat: 39.800, lonEast: 202.100 }
+      ]
+    },
+    {
+      title: "Regolith Sintering & Radiation Shielding",
+      region: "Arcadia Planitia · Erebus Montes border",
+      protocol: "Compact local soil into modular bags or microwave-sinter it into structural bricks. Measure shielding from galactic cosmic rays and solar particle events.",
+      rationale: "Low elevation provides a thicker atmospheric column, while the area offers fine-grained basaltic regolith for construction tests.",
+      targets: [
+        { name: "Candidate Site EM-16", lat: 39.890, lonEast: 192.030 }
+      ]
+    },
+    {
+      title: "Deep Core Biosignature Drilling",
+      region: "Jezero Crater · Western Isidis Planitia",
+      protocol: "Extract intact rock cores 2-5 meters below the surface. Analyze shielded samples for complex amino acids, lipids, or microfossils.",
+      rationale: "The ancient lakebed and river delta contain clay minerals, carbonates, and organic molecules that may preserve signs of past habitability.",
+      targets: [
+        { name: "Perseverance Landing Zone", lat: 18.4663, lonEast: 77.4298 },
+        { name: "Delta Front Target", lat: 18.447, lonEast: 77.452 }
+      ]
+    },
+    {
+      title: "Perchlorate Soil Remediation & Agriculture",
+      region: "Jezero Crater · Western Isidis Planitia",
+      protocol: "Wash delta clays and introduce perchlorate-reducing bacteria in a sealed greenhouse. Test crops such as potatoes, soybeans, and spirulina in treated soil.",
+      rationale: "Clay-rich soil provides a candidate substrate for testing soil detoxification and closed-loop agriculture.",
+      targets: [
+        { name: "Jezero Crater Floor", lat: 18.4663, lonEast: 77.4298 }
+      ]
+    },
+    {
+      title: "Lava Tube Habitat Mapping & Shielding",
+      region: "Arsia Mons · Tharsis Montes",
+      protocol: "Deploy autonomous drones and ground-penetrating radar into collapsed skylight pits. Measure thermal stability, structural integrity, and natural radiation shielding.",
+      rationale: "Candidate skylight entrances may provide access to underground volcanic caverns for habitat and shielding studies.",
+      targets: [
+        { name: "Arsia Mons Skylight Pit", lat: -3.433, lonEast: 236.314 },
+        { name: "Secondary Pit", lat: -3.069, lonEast: 236.062 }
+      ]
+    },
+    {
+      title: "Multi-Station Seismic Network",
+      region: "Arsia Mons · Tharsis Volcanic Province",
+      protocol: "Deploy a triangular array of broadband seismometers spaced several kilometers apart. Triangulate marsquake epicenters and map subsurface structure.",
+      rationale: "A regional network can build on InSight measurements to study the crust and mantle around a major volcanic province.",
+      targets: [
+        { name: "Arsia Mons Regional Array", lat: -8.350, lonEast: 239.910 }
+      ]
+    },
+    {
+      title: "Electrostatic Dust Mitigation & Ballooning",
+      region: "Multi-site · Arcadia Planitia and Jezero Crater",
+      protocol: "Test electrodynamic dust shields on spacesuits, visors, and solar arrays. Use instrumented weather balloons to profile boundary-layer wind shear and dust lifting.",
+      rationale: "Comparing northern plains and an equatorial basin helps characterize winds relevant to entry, descent, landing, and surface operations.",
+      targets: [
+        { name: "Arcadia Planitia Site", lat: 39.800, lonEast: 202.100 },
+        { name: "Jezero Crater Site", lat: 18.466, lonEast: 77.430 }
+      ]
+    }
+  ];
   const IMAGERY = {
     viking: SERVICES + "Mars_Viking_MDIM21_ClrMosaic_global_232m/ImageServer",
     relief: SERVICES + "Mars_MOLA_blend200ppx_HRSC_ClrShade_clon0dd_200mpp/ImageServer",
@@ -179,6 +257,103 @@
   let activeCoordinates = { lat: ORIGIN.lat, lon: ORIGIN.lon };
   let routeSelection = { from: null, to: null };
   let routeHighlight = { from: -1, to: -1 };
+  let routeReturnView = null;
+  let routeReturnFocus = null;
+
+  function normalizeEastLongitude(longitude) {
+    return ((longitude + 180) % 360 + 360) % 360 - 180;
+  }
+
+  function renderMissions() {
+    const list = byId("mission-list");
+    const targetCount = MISSIONS.reduce(function (count, mission) {
+      return count + mission.targets.length;
+    }, 0);
+    byId("mission-count").textContent = MISSIONS.length + " experiments · " + targetCount + " target sites";
+    list.replaceChildren();
+
+    MISSIONS.forEach(function (mission, missionIndex) {
+      const card = document.createElement("article");
+      card.className = "mission-card";
+
+      const heading = document.createElement("div");
+      heading.className = "mission-card-heading";
+      const index = document.createElement("span");
+      index.className = "mission-index";
+      index.textContent = String(missionIndex + 1).padStart(2, "0");
+      const title = document.createElement("h3");
+      title.textContent = mission.title;
+      heading.append(index, title);
+
+      const region = document.createElement("p");
+      region.className = "mission-region";
+      region.textContent = mission.region;
+      const protocol = document.createElement("p");
+      protocol.className = "mission-protocol";
+      protocol.textContent = mission.protocol;
+      const rationale = document.createElement("p");
+      rationale.className = "mission-rationale";
+      rationale.textContent = mission.rationale;
+
+      const targets = document.createElement("div");
+      targets.className = "mission-targets";
+      mission.targets.forEach(function (target, targetIndex) {
+        const row = document.createElement("div");
+        row.className = "mission-target";
+        const details = document.createElement("div");
+        details.className = "mission-target-details";
+        const name = document.createElement("strong");
+        name.textContent = target.name;
+        const coordinates = document.createElement("span");
+        coordinates.textContent = formatCoordinate(target.lat, "lat") + " · " +
+          formatCoordinate(normalizeEastLongitude(target.lonEast), "lon");
+        details.append(name, coordinates);
+
+        const go = document.createElement("button");
+        go.className = "mission-target-go";
+        go.type = "button";
+        go.textContent = "Go to";
+        go.setAttribute("aria-label", "Go to " + target.name);
+        go.addEventListener("click", function () {
+          const destination = {
+            key: "mission-" + missionIndex + "-" + targetIndex,
+            name: target.name,
+            label: target.name,
+            category: mission.title,
+            region: mission.region,
+            lat: target.lat,
+            lon: normalizeEastLongitude(target.lonEast)
+          };
+          openRoutePlanner(destination, go);
+        });
+        row.append(details, go);
+        targets.appendChild(row);
+      });
+
+      card.append(heading, region, protocol, rationale, targets);
+      list.appendChild(card);
+    });
+  }
+
+  function openMissions() {
+    byId("route-planner").hidden = true;
+    byId("mission-browser").hidden = false;
+    byId("sidebar-content").hidden = true;
+    byId("map-controls").classList.remove("is-routing");
+    byId("map-controls").classList.add("is-missions");
+    if (window.matchMedia("(max-width: 680px)").matches) {
+      byId("map-controls").classList.add("is-open");
+    }
+    byId("open-missions").setAttribute("aria-expanded", "true");
+  }
+
+  function closeMissions() {
+    byId("mission-browser").hidden = true;
+    byId("sidebar-content").hidden = false;
+    byId("map-controls").classList.remove("is-missions", "is-open");
+    byId("open-missions").setAttribute("aria-expanded", "false");
+    byId("open-missions").focus();
+  }
 
   function formatCoordinate(value, axis) {
     const direction = axis === "lat"
@@ -618,10 +793,12 @@
     }
   }
 
-  function openRoutePlanner() {
+  function openRoutePlanner(destination, returnFocus) {
     clearPlannedRoute();
     routeSelection = { from: null, to: null };
     routeHighlight = { from: -1, to: -1 };
+    routeReturnView = destination ? "missions" : null;
+    routeReturnFocus = returnFocus || null;
     ["from", "to"].forEach(function (side) {
       byId("route-" + side).value = "";
       updateRouteFieldMeta(side);
@@ -631,26 +808,61 @@
     byId("route-preview").hidden = true;
     byId("route-status").textContent = "";
     updateRouteButtons();
+    byId("mission-browser").hidden = true;
     byId("route-planner").hidden = false;
+    byId("map-controls").classList.remove("is-missions");
     byId("map-controls").classList.add("is-routing");
     byId("sidebar-content").hidden = true;
     if (window.matchMedia("(max-width: 680px)").matches) {
       byId("map-controls").classList.add("is-open");
     }
     byId("open-route-planner").setAttribute("aria-expanded", "true");
-    window.setTimeout(function () { byId("route-from").focus(); }, 0);
+    if (destination) {
+      const center = getCurrentMapState();
+      routeSelection.from = {
+        key: "map-center",
+        name: "Current map center",
+        label: "Current map center",
+        category: "Current view",
+        region: "Map center",
+        lat: center.lat,
+        lon: center.lon
+      };
+      routeSelection.to = destination;
+      ["from", "to"].forEach(function (side) {
+        byId("route-" + side).value = routeSelection[side].label || routeSelection[side].name;
+        updateRouteFieldMeta(side);
+      });
+      updateRouteButtons();
+      window.setTimeout(calculateRoute, 0);
+    } else {
+      window.setTimeout(function () { byId("route-from").focus(); }, 0);
+    }
   }
 
   function closeRoutePlanner() {
     ["from", "to"].forEach(hideRouteSuggestions);
     byId("route-planner").hidden = true;
+    byId("open-route-planner").setAttribute("aria-expanded", "false");
+    if (routeReturnView === "missions") {
+      byId("mission-browser").hidden = false;
+      byId("map-controls").classList.remove("is-routing");
+      byId("map-controls").classList.add("is-missions");
+      byId("open-missions").setAttribute("aria-expanded", "true");
+      if (routeReturnFocus) routeReturnFocus.focus();
+      routeReturnView = null;
+      routeReturnFocus = null;
+      return;
+    }
     byId("sidebar-content").hidden = false;
     byId("map-controls").classList.remove("is-routing", "is-open");
-    byId("open-route-planner").setAttribute("aria-expanded", "false");
+    routeReturnView = null;
+    routeReturnFocus = null;
     byId("open-route-planner").focus();
   }
 
   function initializeRoutePlanner() {
+    renderMissions();
     ["from", "to"].forEach(function (side) {
       const input = byId("route-" + side);
       input.addEventListener("focus", function () { renderRouteSuggestions(side); });
@@ -682,8 +894,13 @@
       });
     });
 
-    byId("open-route-planner").addEventListener("click", openRoutePlanner);
+    byId("open-route-planner").addEventListener("click", function () { openRoutePlanner(); });
     byId("close-route-planner").addEventListener("click", closeRoutePlanner);
+    byId("open-missions").addEventListener("click", openMissions);
+    byId("close-missions").addEventListener("click", closeMissions);
+    byId("mission-browser").addEventListener("keydown", function (event) {
+      if (event.key === "Escape") closeMissions();
+    });
     byId("route-form").addEventListener("submit", function (event) {
       event.preventDefault();
       calculateRoute();

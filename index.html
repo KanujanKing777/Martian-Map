@@ -72,10 +72,16 @@
             <div class="section-kicker">LOCATION</div>
             <div class="search-title-row">
               <h1 id="search-title">Find a place</h1>
-              <button class="icon-button route-launch" id="open-route-planner" type="button" title="Plan a route" aria-label="Plan a route" aria-controls="route-planner" aria-expanded="false">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="6" r="2.5"/><path d="M8.5 18H11a5 5 0 0 0 5-5V11a5 5 0 0 1 2-4"/></svg>
-                <span>Go to</span>
-              </button>
+              <div class="search-title-actions">
+                <button class="icon-button mission-launch" id="open-missions" type="button" title="Browse mission experiments" aria-label="Browse mission experiments" aria-controls="mission-browser" aria-expanded="false">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5 14.4 9l5.9.5-4.5 3.9 1.3 5.7L12 16.2l-5.1 2.9 1.3-5.7-4.5-3.9L9.6 9 12 3.5Z"/><circle cx="19.5" cy="4.5" r="1"/></svg>
+                  <span>Missions</span>
+                </button>
+                <button class="icon-button route-launch" id="open-route-planner" type="button" title="Plan a route" aria-label="Plan a route" aria-controls="route-planner" aria-expanded="false">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="6" r="2.5"/><path d="M8.5 18H11a5 5 0 0 0 5-5V11a5 5 0 0 1 2-4"/></svg>
+                  <span>Go to</span>
+                </button>
+              </div>
             </div>
             <form class="search-form" id="search-form">
               <label class="sr-only" for="place-search">Search a location or coordinates</label>
@@ -117,6 +123,20 @@
             <span>Independent viewer · NASA Mars Trek + USGS + ASU THEMIS</span>
           </footer>
         </div>
+        <section class="mission-browser" id="mission-browser" role="dialog" aria-labelledby="missions-title" hidden>
+          <div class="mission-browser-header">
+            <div>
+              <div class="section-kicker">MISSION PROGRAM</div>
+              <h2 id="missions-title">Missions</h2>
+              <p id="mission-count" class="mission-count"></p>
+            </div>
+            <button class="route-close" id="close-missions" type="button" aria-label="Close missions" title="Close">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
+            </button>
+          </div>
+          <p class="mission-intro">Browse experiment plans and target sites. Go to a site to find a route from the current map center.</p>
+          <div class="mission-list" id="mission-list"></div>
+        </section>
         <section class="route-planner" id="route-planner" role="dialog" aria-labelledby="route-title" hidden>
           <div class="route-planner-header">
             <div>

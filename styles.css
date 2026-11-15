@@ -150,7 +150,30 @@ button:focus-visible, input:focus-visible, a:focus-visible {
 .layer-switcher .imagery-option strong { overflow: hidden; font-size: 11px; line-height: 1.1; text-align: center; text-overflow: ellipsis; white-space: normal; }
 .route-planner { position: absolute; z-index: 8; top: var(--layer-switcher-height); right: 0; bottom: 0; left: 0; display: flex; flex-direction: column; gap: 0; overflow-y: auto; padding: 23px 22px; background: var(--panel); }
 .route-planner[hidden], .route-preview[hidden] { display: none; }
-.sidebar.is-routing .sidebar-scroll { display: none; }
+.sidebar.is-routing .sidebar-scroll, .sidebar.is-missions .sidebar-scroll { display: none; }
+.mission-browser { position: absolute; z-index: 8; top: var(--layer-switcher-height); right: 0; bottom: 0; left: 0; display: flex; flex-direction: column; overflow: hidden; padding: 19px 17px 13px; background: var(--panel); }
+.mission-browser[hidden] { display: none; }
+.mission-browser-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; padding-bottom: 13px; border-bottom: 1px solid var(--line); }
+.mission-browser-header h2 { margin: 4px 0 3px; font-size: 20px; font-weight: 600; letter-spacing: -.025em; }
+.mission-count { margin: 0; color: var(--muted); font: 11px var(--mono); }
+.mission-intro { margin: 12px 0; color: var(--soft); font-size: 13px; line-height: 1.45; }
+.mission-list { min-height: 0; flex: 1 1 auto; overflow-y: auto; padding: 0 3px 0 0; scrollbar-color: #3a403b transparent; scrollbar-width: thin; }
+.mission-card { margin: 0 0 10px; padding: 13px 12px 11px; background: #1c201d; border: 1px solid var(--line); border-radius: 4px; }
+.mission-card-heading { display: grid; grid-template-columns: 25px minmax(0, 1fr); align-items: start; gap: 8px; }
+.mission-index { padding-top: 2px; color: var(--accent-light); font: 11px var(--mono); }
+.mission-card h3 { margin: 0; font-size: 14px; line-height: 1.35; font-weight: 600; }
+.mission-region { margin: 6px 0 10px 33px; color: #d0ab96; font: 11px var(--mono); line-height: 1.4; }
+.mission-protocol, .mission-rationale { margin: 0 0 8px; color: var(--soft); font-size: 12px; line-height: 1.5; }
+.mission-rationale { color: #969d93; }
+.mission-targets { margin-top: 10px; border-top: 1px solid var(--line); }
+.mission-target { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 9px 0; border-bottom: 1px solid rgba(224,229,218,.08); }
+.mission-target:last-child { border-bottom: 0; padding-bottom: 1px; }
+.mission-target-details { display: grid; min-width: 0; gap: 4px; }
+.mission-target-details strong { overflow: hidden; font-size: 12px; font-weight: 500; text-overflow: ellipsis; white-space: nowrap; }
+.mission-target-details span { color: var(--muted); font: 10px var(--mono); font-variant-numeric: tabular-nums; }
+.mission-target-go { min-height: 32px; flex: 0 0 auto; padding: 0 11px; color: #f8ded2; background: rgba(229,108,67,.12); border: 1px solid rgba(229,108,67,.4); border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600; transition: background .15s ease, border-color .15s ease, transform .1s ease; }
+.mission-target-go:hover { background: rgba(229,108,67,.22); border-color: rgba(229,108,67,.7); }
+.mission-target-go:active { transform: translateY(1px); }
 .route-planner-header { display: flex; align-items: center; justify-content: space-between; padding-bottom: 17px; border-bottom: 1px solid var(--line); }
 .route-planner-header h2 { margin: 5px 0 0; font-size: 20px; font-weight: 600; letter-spacing: -.025em; }
 .route-close { display: grid; width: 36px; height: 36px; place-items: center; color: var(--soft); background: transparent; border: 1px solid var(--line-strong); border-radius: 4px; cursor: pointer; transition: color .15s ease, background .15s ease, border-color .15s ease; }
@@ -211,8 +234,9 @@ button:focus-visible, input:focus-visible, a:focus-visible {
 .search-section { padding: 25px 22px 20px; border-bottom: 1px solid var(--line); }
 .section-kicker { color: #9da39a; font: 10px var(--mono); letter-spacing: .09em; }
 .search-title-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 8px 0 15px; }
+.search-title-actions { display: flex; align-items: center; gap: 6px; flex: 0 0 auto; }
 .search-section h1 { margin: 0; font-size: 19px; font-weight: 600; letter-spacing: -.025em; }
-.route-launch { flex: 0 0 auto; min-height: 34px; padding: 0 10px; }
+.mission-launch, .route-launch { flex: 0 0 auto; min-height: 34px; padding: 0 9px; }
 .search-form { position: relative; display: flex; height: 42px; background: #111412; border: 1px solid var(--line-strong); border-radius: 4px; }
 .search-form:focus-within { border-color: rgba(229,108,67,.78); }
 .search-icon { width: 16px; height: 16px; flex: 0 0 auto; align-self: center; margin-left: 12px; fill: none; stroke: #8d938a; stroke-width: 1.6; stroke-linecap: round; }
@@ -370,8 +394,11 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   }
   .sidebar.is-open { transform: translateY(0); }
   .sidebar-scroll { max-height: min(58vh, 500px); }
-  .sidebar.is-routing { height: min(76vh, 660px); max-height: min(76vh, 660px); }
+  .sidebar.is-routing, .sidebar.is-missions { height: min(76vh, 660px); max-height: min(76vh, 660px); }
   .route-planner { padding: 17px 16px; }
+  .mission-browser { padding: 15px 13px 11px; }
+  .mission-list { padding-right: 2px; }
+  .mission-card { padding: 11px 10px 9px; }
   .search-section { padding: 16px 16px 13px !important; }
   .search-title-row { margin: 6px 0 10px; }
   .search-section h1 { font-size: 16px; }
