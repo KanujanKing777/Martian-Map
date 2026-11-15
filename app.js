@@ -169,6 +169,7 @@
   let toastTimer;
   let focusMarker;
   let plannedRouteLayer;
+  let plannedEndpointMarkers = [];
   let activeCoordinates = { lat: ORIGIN.lat, lon: ORIGIN.lon };
   let routeSelection = { from: null, to: null };
   let routeHighlight = { from: -1, to: -1 };
@@ -482,7 +483,11 @@
 
   function clearPlannedRoute() {
     if (plannedRouteLayer && map.hasLayer(plannedRouteLayer)) map.removeLayer(plannedRouteLayer);
+    plannedEndpointMarkers.forEach(function (marker) {
+      if (map.hasLayer(marker)) map.removeLayer(marker);
+    });
     plannedRouteLayer = null;
+    plannedEndpointMarkers = [];
   }
 
   function drawPlannedRoute(coordinates) {
@@ -492,6 +497,11 @@
       map.getPane("plannedRoutePane").style.zIndex = 625;
       map.getPane("plannedRoutePane").style.pointerEvents = "none";
     }
+    if (!map.getPane("plannedRouteLabelsPane")) {
+      map.createPane("plannedRouteLabelsPane");
+      map.getPane("plannedRouteLabelsPane").style.zIndex = 640;
+      map.getPane("plannedRouteLabelsPane").style.pointerEvents = "none";
+    }
     plannedRouteLayer = L.polyline(coordinates, {
       pane: "plannedRoutePane",
       color: "#f28b59",
@@ -500,6 +510,30 @@
       lineCap: "round",
       lineJoin: "round"
     }).addTo(map);
+    [
+      { place: routeSelection.from, label: "From", isDestination: false },
+      { place: routeSelection.to, label: "To", isDestination: true }
+    ].forEach(function (endpointInfo) {
+      const place = endpointInfo.place;
+      const endpoint = L.circleMarker([place.lat, place.lon], {
+        pane: "plannedRouteLabelsPane",
+        radius: 6,
+        color: "#f2e9db",
+        weight: 2,
+        fillColor: endpointInfo.isDestination ? "#74b8a0" : "#e56c43",
+        fillOpacity: 1,
+        interactive: false
+      }).bindTooltip(endpointInfo.label + " · " + place.name, {
+        permanent: true,
+        direction: "right",
+        offset: [9, 0],
+        className: endpointInfo.isDestination
+          ? "route-place-tooltip route-place-tooltip-to"
+          : "route-place-tooltip",
+        opacity: 1
+      });
+      plannedEndpointMarkers.push(endpoint.addTo(map));
+    });
     if (coordinates.length > 1) {
       map.fitBounds(plannedRouteLayer.getBounds(), { padding: [48, 48], maxZoom: 7 });
     }
@@ -541,7 +575,7 @@
       drawPlannedRoute(result.path);
       byId("route-preview-title").textContent = "Least-cost route found";
       byId("route-preview-note").textContent =
-        "This is a planning estimate, not a safety guarantee. The available layers do not include several important hazards.";
+        "This is a planning estimate, not a safety guarantee.";
       const used = ["MOLA elevation: slope and local roughness"];
       if (result.data && result.data.tesThermalInertia) used.push("TES thermal inertia");
       const omitted = (result.omitted || []).join(", ");
@@ -886,7 +920,7 @@
         showToast("Enter latitude from −90 to 90 and longitude from −180 to 180");
         return;
       }
-      setFocus(lat, lon, "Map center", "Custom coordinates", 7);
+      setFocus(lat, lon, coordinates[1] + ", " + coordinates[2], "Custom coordinates", 7);
       byId("search-results").hidden = true;
       byId("place-search").value = "";
       closeMobileSidebar();
