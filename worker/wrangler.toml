@@ -1,0 +1,9 @@
+name = "mars-atlas-route-api"
+main = "src/index.ts"
+compatibility_date = "2026-11-15"
+
+# Set this to the exact Firebase Hosting origin (for example,
+# https://marsexploreratla.web.app) before deploying.
+[vars]
+ALLOWED_ORIGIN = "https://marsexploreratla.web.app"
+

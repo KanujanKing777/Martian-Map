@@ -1,0 +1,16 @@
+{
+  "name": "mars-atlas-route-worker",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "dependencies": {
+    "geotiff": "^2.1.3"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "wrangler": "^4.48.0"
+  }
+}

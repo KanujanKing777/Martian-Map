@@ -775,7 +775,7 @@
     clearPlannedRoute();
 
     try {
-      const response = await fetch("/api/route", {
+      const response = await fetch("https://mars-atlas-route-api.conspiracyworld.workers.dev/api/route", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -818,7 +818,7 @@
     } catch (error) {
       byId("route-preview").hidden = true;
       byId("route-form").hidden = false;
-      byId("route-status").textContent = error.message || "Route calculation failed. Check that the Python backend is running.";
+      byId("route-status").textContent = error.message || "Route calculation failed. Check the route API and try again.";
     } finally {
       updateRouteButtons();
       byId("route-go").textContent = "Go";

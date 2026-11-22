@@ -11,11 +11,12 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
+from io import BytesIO
 from pathlib import Path
 from typing import Any
 
 import numpy as np
-import rasterio
+from PIL import Image
 
 
 ROOT = Path(__file__).resolve().parent
@@ -55,12 +56,68 @@ def _request_bytes(url: str, timeout: int = 50) -> bytes:
     return payload
 
 
+def _read_vicar(payload: bytes) -> tuple[np.ndarray, float | None]:
+    """Read a single-band VICAR image, as returned by ASU's TES WMS."""
+    try:
+        marker = payload.find(b"LBLSIZE=")
+        if marker < 0:
+            raise ValueError("Missing VICAR label")
+        size_end = payload.find(b"\n", marker)
+        size_line = payload[marker:size_end if size_end >= 0 else marker + 64].decode("ascii")
+        label_size = int(size_line.split("=", 1)[1].strip().split()[0])
+        if label_size <= 0 or label_size > len(payload):
+            raise ValueError("Invalid VICAR label size")
+        label = payload[marker:label_size].decode("ascii")
+        fields: dict[str, str] = {}
+        for item in label.replace("\r", " ").replace("\n", " ").split():
+            if "=" in item:
+                key, value = item.split("=", 1)
+                fields[key] = value.strip("'\" ,")
+
+        lines, samples = int(fields["NL"]), int(fields["NS"])
+        bands = int(fields.get("NB", "1"))
+        if label_size <= 0 or lines <= 0 or samples <= 0 or bands != 1:
+            raise ValueError("Unsupported VICAR dimensions")
+        format_name = fields.get("FORMAT", "HALF").upper()
+        dtypes = {"BYTE": "u1", "HALF": "i2", "FULL": "i4", "REAL": "f4", "DOUB": "f8"}
+        if format_name not in dtypes:
+            raise ValueError("Unsupported VICAR pixel format")
+        dtype = np.dtype(dtypes[format_name])
+        if dtype.itemsize > 1:
+            byte_order = ">" if fields.get("INTFMT", "HIGH").upper() == "HIGH" else "<"
+            if format_name in ("REAL", "DOUB") and fields.get("REALFMT", "IEEE").upper() == "RIEEE":
+                byte_order = ">"
+            dtype = dtype.newbyteorder(byte_order)
+        prefix_bytes = int(fields.get("NBB", "0"))
+        prefix_records = int(fields.get("NLB", "0"))
+        record_size = prefix_bytes + samples * dtype.itemsize
+        offset = label_size + prefix_records * record_size
+        raw = np.frombuffer(payload, dtype=np.uint8, count=lines * record_size, offset=offset)
+        if raw.size != lines * record_size:
+            raise ValueError("Incomplete VICAR pixel data")
+        records = raw.reshape(lines, record_size)
+        pixels = np.empty((lines, samples), dtype=dtype)
+        for row in range(lines):
+            pixels[row] = np.frombuffer(records[row, prefix_bytes:].tobytes(), dtype=dtype, count=samples)
+        nodata = float(fields["NODATA"]) if "NODATA" in fields else None
+        return pixels.astype(np.float32), nodata
+    except Exception as error:
+        raise RouteError("The returned ASU thermal raster format could not be decoded.") from error
+
+
 def _read_raster(payload: bytes, nodata_values: tuple[float, ...] = ()) -> np.ndarray:
     try:
-        with rasterio.MemoryFile(payload) as memory_file:
-            with memory_file.open() as dataset:
-                band = dataset.read(1).astype(np.float32)
-                nodata = dataset.nodata
+        if payload.lstrip().startswith(b"LBLSIZE=") or b"LBLSIZE=" in payload[:4096]:
+            band, nodata = _read_vicar(payload)
+        else:
+            with Image.open(BytesIO(payload)) as image:
+                band = np.asarray(image)
+                if band.ndim == 3:
+                    band = band[:, :, 0]
+                if band.ndim != 2:
+                    raise ValueError("Expected a single-band raster")
+                band = band.astype(np.float32)
+            nodata = None
         if nodata is not None:
             band[band == nodata] = np.nan
         for value in nodata_values:

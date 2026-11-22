@@ -18,7 +18,7 @@ The app helps users move from broad planetary context to specific places and pos
 
 ## Tools and data
 
-The frontend uses HTML, CSS, JavaScript, Leaflet, and Esri Leaflet. The local Python 3.10+ server uses Python's standard HTTP server, NumPy, and Rasterio for the route API and raster processing. Public data services include NASA Mars Trek, the USGS global geologic map of Mars, and Arizona State University's THEMIS and TES data. The application requires an internet connection to retrieve remote map and terrain data. No specialized hardware is required; it runs in a modern desktop or mobile browser.
+The frontend uses HTML, CSS, JavaScript, Leaflet, and Esri Leaflet. The local Python 3.10+ server uses Python's standard HTTP server, NumPy, and Pillow for the route API and TIFF processing. A small built-in reader handles the VICAR image format used by the ASU TES service. Public data services include NASA Mars Trek, the USGS global geologic map of Mars, and Arizona State University's THEMIS and TES data. The application requires an internet connection to retrieve remote map and terrain data. No specialized hardware is required; it runs in a modern desktop or mobile browser.
 
 ## Creative approach and planning factors
 
