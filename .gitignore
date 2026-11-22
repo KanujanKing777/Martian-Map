@@ -7,6 +7,13 @@ yarn-error.log*
 firebase-debug.log*
 firebase-debug.*.log*
 
+safe.md
+summary.txt
+project-details.md
+todo.txt
+experiment.md
+Mars_Mission_Experiments_and_Coordinates.pdf
+
 # Firebase cache
 .firebase/
 
